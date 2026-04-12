@@ -798,7 +798,7 @@ def stocktake_list(request):
     return render(request, "core/stocktake_list.html", {
         "shop": request.shop,
         "stocktakes": stocktakes,
-        "active_tab": "inventory",
+        "active_tab": "stocktakes",
     })
 
 
@@ -835,7 +835,7 @@ def stocktake_create(request):
     return render(request, "core/stocktake_create.html", {
         "shop": request.shop,
         "locations": locations,
-        "active_tab": "inventory",
+        "active_tab": "stocktakes",
     })
 
 
@@ -863,7 +863,7 @@ def stocktake_count(request, stocktake_id):
         "shop": request.shop,
         "stocktake": stocktake,
         "items": items,
-        "active_tab": "inventory",
+        "active_tab": "stocktakes",
     })
 
 
@@ -892,7 +892,7 @@ def stocktake_review(request, stocktake_id):
         "variances": variances,
         "total_variance": total_var,
         "total_value": round(total_val, 2),
-        "active_tab": "inventory",
+        "active_tab": "stocktakes",
     })
 
 
@@ -940,7 +940,7 @@ def transfer_list(request):
     return render(request, "core/transfer_list.html", {
         "shop": request.shop,
         "transfers": transfers,
-        "active_tab": "inventory",
+        "active_tab": "transfers",
     })
 
 
@@ -951,7 +951,7 @@ def transfer_suggestions(request):
     if locations.count() < 2:
         return render(request, "core/transfer_suggestions.html", {
             "shop": request.shop, "suggestions": [], "single_location": True,
-            "active_tab": "inventory",
+            "active_tab": "transfers",
         })
 
     suggestions = []
@@ -999,7 +999,7 @@ def transfer_suggestions(request):
         "shop": request.shop,
         "suggestions": suggestions,
         "single_location": False,
-        "active_tab": "inventory",
+        "active_tab": "transfers",
     })
 
 
@@ -1036,7 +1036,7 @@ def transfer_create(request):
         "shop": request.shop,
         "locations": locations,
         "variants": variants[:200],
-        "active_tab": "inventory",
+        "active_tab": "transfers",
     })
 
 
