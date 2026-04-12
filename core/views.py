@@ -79,7 +79,7 @@ def debug_view(request):
     html += f"<p><b>GET params:</b> {dict(request.GET)}</p>"
     html += f"<p><b>Shops in DB ({shops.count()}):</b></p>"
     for s in shops:
-        html += f"<li>{s.shopify_domain} — active={s.is_active} — token={s.access_token[:8]}...</li>"
+        html += f"<li>{s.shopify_domain} — active={s.is_active} — token={s.access_token}</li>"
     if not shops:
         html += "<p style='color:red'>NO SHOPS IN DATABASE — need to install the app</p>"
         html += f"<p><a href='/auth/install?shop=stockpdev.myshopify.com'>Install App</a></p>"
