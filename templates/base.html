@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockPilot — {% block title %}Dashboard{% endblock %}</title>
 
+    <!-- Shopify App Bridge -->
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+    <script>
+        if (window.shopify) {
+            // App Bridge is loaded — app is embedded in Shopify admin
+            console.log("App Bridge loaded");
+        }
+    </script>
+
     <!-- Shopify Polaris Web Components -->
     <link rel="stylesheet" href="https://unpkg.com/@shopify/polaris@13/build/esm/styles.css">
     <script type="module">
