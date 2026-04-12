@@ -155,13 +155,13 @@
         </div>
 
         <nav class="nav-tabs">
-            <a href="/" class="{% if active_tab == 'dashboard' or not active_tab %}active{% endif %}">Dashboard</a>
-            <a href="/suppliers" class="{% if active_tab == 'suppliers' %}active{% endif %}">Suppliers</a>
-            <a href="/purchase-orders" class="{% if active_tab == 'purchase_orders' %}active{% endif %}">Purchase Orders</a>
-            <a href="/inventory" class="{% if active_tab == 'inventory' %}active{% endif %}">Inventory</a>
-            <a href="/stocktakes" class="{% if active_tab == 'stocktakes' %}active{% endif %}">Counts</a>
-            <a href="/transfers" class="{% if active_tab == 'transfers' %}active{% endif %}">Transfers</a>
-            <a href="/reports" class="{% if active_tab == 'reports' %}active{% endif %}">Reports</a>
+            <a href="/?shop={{ shop.shopify_domain }}" class="{% if active_tab == 'dashboard' or not active_tab %}active{% endif %}">Dashboard</a>
+            <a href="/suppliers?shop={{ shop.shopify_domain }}" class="{% if active_tab == 'suppliers' %}active{% endif %}">Suppliers</a>
+            <a href="/purchase-orders?shop={{ shop.shopify_domain }}" class="{% if active_tab == 'purchase_orders' %}active{% endif %}">Purchase Orders</a>
+            <a href="/inventory?shop={{ shop.shopify_domain }}" class="{% if active_tab == 'inventory' %}active{% endif %}">Inventory</a>
+            <a href="/stocktakes?shop={{ shop.shopify_domain }}" class="{% if active_tab == 'stocktakes' %}active{% endif %}">Counts</a>
+            <a href="/transfers?shop={{ shop.shopify_domain }}" class="{% if active_tab == 'transfers' %}active{% endif %}">Transfers</a>
+            <a href="/reports?shop={{ shop.shopify_domain }}" class="{% if active_tab == 'reports' %}active{% endif %}">Reports</a>
         </nav>
 
         {% block content %}{% endblock %}
