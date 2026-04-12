@@ -93,16 +93,26 @@ def dashboard(request):
 
 # --- Sync ---
 
-@_require_shop
 def sync_from_shopify(request):
-    from .shopify_client import ShopifyClient
+    """Sync — no decorator, handle shop manually to avoid 500 on redirect."""
     import traceback
     try:
-        client = ShopifyClient(request.shop)
+        shop = _get_shop(request)
+        if not shop:
+            return HttpResponse("No shop found. Install the app first.", status=400)
+
+        from .shopify_client import ShopifyClient
+        client = ShopifyClient(shop)
         client.sync_all()
-        return redirect(f"/?shop={request.shop.shopify_domain}")
+        return HttpResponse(
+            f"<h2>Sync complete!</h2>"
+            f"<p>Store: {shop.shopify_domain}</p>"
+            f"<p>Products synced at: {shop.last_product_sync}</p>"
+            f"<p><a href='/?shop={shop.shopify_domain}'>Go to Dashboard</a></p>"
+        )
     except Exception as e:
-        return HttpResponse(f"<pre>Sync error:\n{e}\n\n{traceback.format_exc()}</pre>", status=500)
+        tb = traceback.format_exc()
+        return HttpResponse(f"<h2>Sync Error</h2><pre>{e}\n\n{tb}</pre>")
 
 
 # =============================================================
