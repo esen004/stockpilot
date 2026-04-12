@@ -96,9 +96,13 @@ def dashboard(request):
 @_require_shop
 def sync_from_shopify(request):
     from .shopify_client import ShopifyClient
-    client = ShopifyClient(request.shop)
-    client.sync_all()
-    return redirect("dashboard")
+    import traceback
+    try:
+        client = ShopifyClient(request.shop)
+        client.sync_all()
+        return redirect(f"/?shop={request.shop.shopify_domain}")
+    except Exception as e:
+        return HttpResponse(f"<pre>Sync error:\n{e}\n\n{traceback.format_exc()}</pre>", status=500)
 
 
 # =============================================================
