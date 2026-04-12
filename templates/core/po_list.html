@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Purchase Orders{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Purchase Orders</h2>
+        <a href="{% url 'po_create' %}" class="btn btn-primary">+ New PO</a>
+    </div>
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <a href="{% url 'po_list' %}" class="btn {% if not status_filter %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">All</a>
+        <a href="{% url 'po_list' %}?status=draft" class="btn {% if status_filter == 'draft' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Draft</a>
+        <a href="{% url 'po_list' %}?status=ordered" class="btn {% if status_filter == 'ordered' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Ordered</a>
+        <a href="{% url 'po_list' %}?status=partial" class="btn {% if status_filter == 'partial' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Partial</a>
+        <a href="{% url 'po_list' %}?status=received" class="btn {% if status_filter == 'received' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Received</a>
+    </div>
+    {% if purchase_orders %}
+    <table>
+        <thead>
+            <tr>
+                <th>PO #</th>
+                <th>Supplier</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for po in purchase_orders %}
+            <tr>
+                <td><a href="{% url 'po_detail' po.id %}">PO-{{ po.po_number }}</a></td>
+                <td>{{ po.supplier.name }}</td>
+                <td>{{ po.location.name|default:"-" }}</td>
+                <td><span class="badge badge-{{ po.status }}">{{ po.get_status_display }}</span></td>
+                <td>{{ po.line_items.count }}</td>
+                <td>{{ po.currency }} {{ po.total }}</td>
+                <td>{{ po.created_at|date:"M d, Y" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #6d7175;">No purchase orders found.</p>
+    {% endif %}
+</div>
+{% endblock %}

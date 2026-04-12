@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Receive — PO-{{ po.po_number }}{% endblock %}
+{% block content %}
+<div class="content-card">
+    <h2>Receive Items — PO-{{ po.po_number }}</h2>
+    <p style="color: #6d7175; font-size: 14px;">Enter quantities received. This will update your Shopify inventory automatically.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <label style="display: block; margin-bottom: 16px;">
+            <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Receive To Location *</span>
+            <select name="location" required style="width: 300px; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px;">
+                {% for l in locations %}
+                <option value="{{ l.id }}" {% if default_location and default_location.id == l.id %}selected{% endif %}>{{ l.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Ordered</th>
+                    <th>Already Received</th>
+                    <th>Remaining</th>
+                    <th style="width: 120px;">Receiving Now</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in line_items %}
+                <tr>
+                    <td>{{ item.description|default:item.variant }}</td>
+                    <td>{{ item.sku|default:"-" }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.received_qty }}</td>
+                    <td style="font-weight: 500;">{{ item.remaining_qty }}</td>
+                    <td>
+                        <input type="number" name="receive_{{ item.id }}" value="{{ item.remaining_qty }}" min="0" max="{{ item.remaining_qty }}"
+                            style="width: 100px; padding: 4px 8px; border: 1px solid #c9cccf; border-radius: 6px; font-size: 14px;">
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button type="submit" class="btn btn-primary">Receive &amp; Update Shopify</button>
+            <a href="{% url 'po_detail' po.id %}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

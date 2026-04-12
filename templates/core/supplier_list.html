@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Suppliers{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Suppliers</h2>
+        <a href="{% url 'supplier_create' %}" class="btn btn-primary">+ Add Supplier</a>
+    </div>
+    {% if suppliers %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Lead Time</th>
+                <th>Terms</th>
+                <th>Products</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in suppliers %}
+            <tr>
+                <td><a href="{% url 'supplier_detail' s.id %}">{{ s.name }}</a></td>
+                <td>{{ s.contact_name }}</td>
+                <td>{{ s.email }}</td>
+                <td>{{ s.lead_time_days }} days</td>
+                <td>{{ s.get_payment_terms_display }}</td>
+                <td>{{ s.product_count }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #6d7175;">No suppliers yet. Add your first supplier to start creating purchase orders.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Fill Shelves{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div>
+        <h2 style="margin: 0;">Fill Shelves — Auto Reorder</h2>
+        <p style="color: #6d7175; font-size: 14px; margin: 4px 0 0;">Suggested reorder quantities based on {{ days_to_cover }}-day sales velocity, grouped by supplier.</p>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <span style="font-size: 13px; color: #6d7175;">Days to cover:</span>
+        <a href="?days=14" class="btn {% if days_to_cover == 14 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 12px; padding: 4px 10px;">14d</a>
+        <a href="?days=30" class="btn {% if days_to_cover == 30 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 12px; padding: 4px 10px;">30d</a>
+        <a href="?days=60" class="btn {% if days_to_cover == 60 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 12px; padding: 4px 10px;">60d</a>
+        <a href="?days=90" class="btn {% if days_to_cover == 90 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 12px; padding: 4px 10px;">90d</a>
+    </div>
+</div>
+
+{% for group in by_supplier %}
+<div class="content-card" style="margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0;">{{ group.supplier.name }}</h3>
+        <span style="font-size: 14px; font-weight: 600;">Est. Cost: {{ group.supplier.currency }} {{ group.total_cost|floatformat:2 }}</span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Current Stock</th>
+                <th>Daily Sales</th>
+                <th>Days Left</th>
+                <th>Suggested Qty</th>
+                <th>Line Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in group.items %}
+            <tr>
+                <td>{{ s.variant.product.title }}{% if s.variant.title != "Default Title" %} - {{ s.variant.title }}{% endif %}</td>
+                <td>{{ s.current_stock }}</td>
+                <td>{{ s.daily_sales }}/day</td>
+                <td>
+                    {% if s.days_of_stock <= 7 %}
+                    <span style="color: #d72c0d; font-weight: 600;">{{ s.days_of_stock }}d</span>
+                    {% elif s.days_of_stock <= 14 %}
+                    <span style="color: #b98900;">{{ s.days_of_stock }}d</span>
+                    {% else %}
+                    {{ s.days_of_stock }}d
+                    {% endif %}
+                </td>
+                <td style="font-weight: 500;">{{ s.suggested_qty }}</td>
+                <td>{{ s.line_cost }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% empty %}
+<div class="content-card">
+    <p style="color: #6d7175;">No reorder suggestions. All items are well-stocked or no sales data available. <a href="{% url 'sync' %}">Sync from Shopify</a> first.</p>
+</div>
+{% endfor %}
+{% endblock %}

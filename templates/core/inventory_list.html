@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Inventory{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Inventory</h2>
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'fill_shelves_global' %}" class="btn btn-primary">Fill Shelves</a>
+            <a href="{% url 'sync' %}" class="btn btn-outline">Sync from Shopify</a>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <form method="get" style="flex: 1;">
+            <input type="text" name="q" value="{{ search }}" placeholder="Search by product name, SKU, or barcode..."
+                style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">
+        </form>
+        <a href="{% url 'inventory_list' %}" class="btn {% if not stock_filter %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">All</a>
+        <a href="{% url 'inventory_list' %}?stock=low" class="btn {% if stock_filter == 'low' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Low Stock</a>
+        <a href="{% url 'inventory_list' %}?stock=out" class="btn {% if stock_filter == 'out' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Out of Stock</a>
+        <a href="{% url 'inventory_list' %}?stock=dead" class="btn {% if stock_filter == 'dead' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Dead Stock</a>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Available</th>
+                <th>Cost</th>
+                <th>Price</th>
+                <th>Supplier</th>
+                <th>Reorder Point</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for v in variants %}
+            <tr>
+                <td>{{ v.product.title }}{% if v.title != "Default Title" %} - {{ v.title }}{% endif %}</td>
+                <td>{{ v.sku|default:"-" }}</td>
+                <td>
+                    {% if v.total_stock is not None and v.total_stock <= 0 %}
+                    <span style="color: #d72c0d; font-weight: 600;">{{ v.total_stock|default:0 }}</span>
+                    {% elif v.total_stock is not None and v.total_stock <= v.reorder_point %}
+                    <span style="color: #b98900; font-weight: 500;">{{ v.total_stock }}</span>
+                    {% else %}
+                    {{ v.total_stock|default:0 }}
+                    {% endif %}
+                </td>
+                <td>{{ v.cost }}</td>
+                <td>{{ v.price }}</td>
+                <td>{{ v.supplier.name|default:"-" }}</td>
+                <td>{{ v.reorder_point }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

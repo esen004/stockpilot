@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}New Purchase Order{% endblock %}
+{% block content %}
+<div class="content-card">
+    <h2>Create Purchase Order</h2>
+    <form method="post" style="max-width: 600px;">
+        {% csrf_token %}
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">PO Number *</span>
+                <input type="text" name="po_number" value="{{ next_po_number }}" required
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">
+            </label>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Supplier *</span>
+                <select name="supplier" required style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px;">
+                    <option value="">Select supplier...</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}">{{ s.name }} ({{ s.lead_time_days }}d lead time)</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Receive To Location</span>
+                <select name="location" style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px;">
+                    <option value="">Select location...</option>
+                    {% for l in locations %}
+                    <option value="{{ l.id }}">{{ l.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Notes</span>
+                <textarea name="notes" rows="3"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;"></textarea>
+            </label>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button type="submit" class="btn btn-primary">Create PO</button>
+                <a href="{% url 'po_list' %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </div>
+    </form>
+    {% if not suppliers %}
+    <p style="color: #d72c0d; margin-top: 12px; font-size: 14px;">You need to <a href="{% url 'supplier_create' %}">add a supplier</a> first.</p>
+    {% endif %}
+</div>
+{% endblock %}

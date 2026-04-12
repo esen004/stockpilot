@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Low Stock Report{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+            <h2 style="margin: 0;">Low Stock Report</h2>
+            <p style="color: #6d7175; font-size: 14px; margin: 4px 0 0;">Items with less than 14 days of stock at current sales velocity.</p>
+        </div>
+        <a href="{% url 'fill_shelves_global' %}" class="btn btn-primary">Fill Shelves</a>
+    </div>
+    {% if items %}
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Days Left</th>
+                <th>Daily Sales</th>
+                <th>Supplier</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for v in items %}
+            <tr>
+                <td>{{ v.variant.product.title }}{% if v.variant.title != "Default Title" %} - {{ v.variant.title }}{% endif %}</td>
+                <td>{{ v.variant.sku|default:"-" }}</td>
+                <td>
+                    {% if v.days_of_stock <= 3 %}
+                    <span style="color: #d72c0d; font-weight: 700;">{{ v.days_of_stock }}d — CRITICAL</span>
+                    {% elif v.days_of_stock <= 7 %}
+                    <span style="color: #d72c0d; font-weight: 600;">{{ v.days_of_stock }}d</span>
+                    {% else %}
+                    <span style="color: #b98900; font-weight: 500;">{{ v.days_of_stock }}d</span>
+                    {% endif %}
+                </td>
+                <td>{{ v.avg_daily_sales_30d|floatformat:1 }}/day</td>
+                <td>{{ v.variant.supplier.name|default:"-" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #0c5132; font-weight: 500;">All items are well-stocked. No low stock alerts.</p>
+    {% endif %}
+</div>
+{% endblock %}

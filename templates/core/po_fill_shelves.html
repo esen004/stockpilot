@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Fill Shelves — PO-{{ po.po_number }}{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+            <h2 style="margin: 0;">Fill Shelves</h2>
+            <p style="color: #6d7175; font-size: 14px; margin: 4px 0 0;">Auto-calculated reorder quantities for {{ po.supplier.name }} based on {{ days_to_cover }}-day sales velocity.</p>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 13px; color: #6d7175;">Days to cover:</span>
+            <a href="?days=14" class="btn {% if days_to_cover == 14 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 12px; padding: 4px 10px;">14d</a>
+            <a href="?days=30" class="btn {% if days_to_cover == 30 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 12px; padding: 4px 10px;">30d</a>
+            <a href="?days=60" class="btn {% if days_to_cover == 60 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 12px; padding: 4px 10px;">60d</a>
+            <a href="?days=90" class="btn {% if days_to_cover == 90 %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 12px; padding: 4px 10px;">90d</a>
+        </div>
+    </div>
+
+    {% if suggestions %}
+    <form method="post">
+        {% csrf_token %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Current Stock</th>
+                    <th>Daily Sales</th>
+                    <th>Days Left</th>
+                    <th style="width: 120px;">Suggested Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in suggestions %}
+                <tr>
+                    <td>{{ s.variant.product.title }}{% if s.variant.title != "Default Title" %} - {{ s.variant.title }}{% endif %}</td>
+                    <td>{{ s.current_stock }}</td>
+                    <td>{{ s.daily_sales }}/day</td>
+                    <td>
+                        {% if s.days_of_stock <= 7 %}
+                        <span style="color: #d72c0d; font-weight: 600;">{{ s.days_of_stock }}d</span>
+                        {% elif s.days_of_stock <= 14 %}
+                        <span style="color: #b98900; font-weight: 500;">{{ s.days_of_stock }}d</span>
+                        {% else %}
+                        {{ s.days_of_stock }}d
+                        {% endif %}
+                    </td>
+                    <td>
+                        <input type="number" name="qty_{{ s.variant.id }}" value="{{ s.suggested_qty }}" min="0"
+                            style="width: 100px; padding: 4px 8px; border: 1px solid #c9cccf; border-radius: 6px; font-size: 14px;">
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button type="submit" class="btn btn-primary">Add to PO</button>
+            <a href="{% url 'po_detail' po.id %}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+    {% else %}
+    <p style="color: #6d7175;">No reorder suggestions. Either all items are well-stocked or no sales velocity data available yet. <a href="{% url 'sync' %}">Sync from Shopify</a> to get the latest data.</p>
+    {% endif %}
+</div>
+{% endblock %}

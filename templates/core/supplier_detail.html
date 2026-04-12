@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ supplier.name }}{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="margin: 0;">{{ supplier.name }}</h2>
+    <div style="display: flex; gap: 8px;">
+        <a href="{% url 'po_create' %}?supplier={{ supplier.id }}" class="btn btn-primary">+ New PO</a>
+        <a href="{% url 'supplier_edit' supplier.id %}" class="btn btn-outline">Edit</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+    <div class="content-card">
+        <h3 style="margin: 0 0 12px; font-size: 14px; color: #6d7175;">Contact Info</h3>
+        <table>
+            <tr><td style="font-weight: 500; width: 120px;">Contact</td><td>{{ supplier.contact_name|default:"-" }}</td></tr>
+            <tr><td style="font-weight: 500;">Email</td><td>{{ supplier.email|default:"-" }}</td></tr>
+            <tr><td style="font-weight: 500;">Phone</td><td>{{ supplier.phone|default:"-" }}</td></tr>
+            <tr><td style="font-weight: 500;">Address</td><td>{{ supplier.address|default:"-" }}</td></tr>
+        </table>
+    </div>
+    <div class="content-card">
+        <h3 style="margin: 0 0 12px; font-size: 14px; color: #6d7175;">Terms</h3>
+        <table>
+            <tr><td style="font-weight: 500; width: 120px;">Currency</td><td>{{ supplier.currency }}</td></tr>
+            <tr><td style="font-weight: 500;">Payment</td><td>{{ supplier.get_payment_terms_display }}</td></tr>
+            <tr><td style="font-weight: 500;">Lead Time</td><td>{{ supplier.lead_time_days }} days</td></tr>
+        </table>
+    </div>
+</div>
+
+{% if recent_pos %}
+<div class="content-card">
+    <h3 style="margin: 0 0 12px; font-size: 14px;">Recent Purchase Orders</h3>
+    <table>
+        <thead><tr><th>PO #</th><th>Status</th><th>Date</th><th>Total</th></tr></thead>
+        <tbody>
+        {% for po in recent_pos %}
+        <tr>
+            <td><a href="{% url 'po_detail' po.id %}">PO-{{ po.po_number }}</a></td>
+            <td><span class="badge badge-{{ po.status }}">{{ po.get_status_display }}</span></td>
+            <td>{{ po.created_at|date:"M d, Y" }}</td>
+            <td>{{ po.currency }} {{ po.total }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if supplier.notes %}
+<div class="content-card">
+    <h3 style="margin: 0 0 8px; font-size: 14px;">Notes</h3>
+    <p style="color: #6d7175; font-size: 14px;">{{ supplier.notes }}</p>
+</div>
+{% endif %}
+{% endblock %}

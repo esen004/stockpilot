@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Choose Plan{% endblock %}
+{% block content %}
+<h2 style="margin: 0 0 8px;">Choose Your Plan</h2>
+<p style="color: #6d7175; margin: 0 0 24px;">14-day free trial on all plans. Cancel anytime.</p>
+
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+    {% for key, plan in plans.items %}
+    <div class="content-card" style="{% if key == current_plan %}border: 2px solid #008060;{% endif %} text-align: center; padding: 30px 20px;">
+        <h3 style="margin: 0 0 4px; font-size: 18px;">{{ plan.name }}</h3>
+        <div style="font-size: 36px; font-weight: 700; margin: 12px 0;">${{ plan.price|floatformat:0 }}</div>
+        <div style="font-size: 13px; color: #6d7175; margin-bottom: 20px;">per month</div>
+
+        <div style="text-align: left; font-size: 14px; color: #202223; line-height: 2;">
+            {% if plan.sku_limit %}
+            Up to {{ plan.sku_limit }} SKUs
+            {% else %}
+            Unlimited SKUs
+            {% endif %}<br>
+            {% if plan.po_limit %}
+            {{ plan.po_limit }} POs/month
+            {% else %}
+            Unlimited POs
+            {% endif %}<br>
+            {% if plan.supplier_limit %}
+            {{ plan.supplier_limit }} supplier
+            {% else %}
+            Unlimited suppliers
+            {% endif %}<br>
+            {% if key == "pro" %}
+            Demand forecasting<br>
+            Weekly email reports<br>
+            {% endif %}
+            {% if key == "growth" or key == "pro" %}
+            Fill shelves auto-reorder<br>
+            {% endif %}
+        </div>
+
+        <form method="post" style="margin-top: 16px;">
+            {% csrf_token %}
+            <input type="hidden" name="plan" value="{{ key }}">
+            {% if key == current_plan %}
+            <button disabled class="btn btn-outline" style="width: 100%; justify-content: center; opacity: 0.5;">Current Plan</button>
+            {% else %}
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                {% if key == "starter" %}Start Free Trial{% else %}Upgrade{% endif %}
+            </button>
+            {% endif %}
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

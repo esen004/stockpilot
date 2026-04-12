@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Dead Stock Report{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+            <h2 style="margin: 0;">Dead Stock Report</h2>
+            <p style="color: #6d7175; font-size: 14px; margin: 4px 0 0;">Products with zero sales in the last 90 days.</p>
+        </div>
+        <div class="metric-card" style="margin: 0;">
+            <h3>Dead Stock Value</h3>
+            <div class="value danger">${{ total_value }}</div>
+        </div>
+    </div>
+    {% if items %}
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Cost</th>
+                <th>Price</th>
+                <th>Supplier</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for v in items %}
+            <tr>
+                <td>{{ v.variant.product.title }}{% if v.variant.title != "Default Title" %} - {{ v.variant.title }}{% endif %}</td>
+                <td>{{ v.variant.sku|default:"-" }}</td>
+                <td>{{ v.variant.cost }}</td>
+                <td>{{ v.variant.price }}</td>
+                <td>{{ v.variant.supplier.name|default:"-" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #0c5132; font-weight: 500;">No dead stock found. All products have sold in the last 90 days.</p>
+    {% endif %}
+</div>
+{% endblock %}

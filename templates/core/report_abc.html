@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}ABC Analysis{% endblock %}
+{% block content %}
+<h2 style="margin: 0 0 16px;">ABC Analysis</h2>
+
+<div class="content-card" style="margin-bottom: 16px;">
+    <h3 style="margin: 0 0 8px; color: #0c5132;">A Items — Top 80% Revenue ({{ a_items.count }})</h3>
+    <p style="font-size: 13px; color: #6d7175; margin: 0 0 12px;">Your best sellers. Never let these run out.</p>
+    {% if a_items %}
+    <table>
+        <thead><tr><th>Product</th><th>SKU</th><th>30d Sales</th><th>90d Sales</th><th>Daily Avg</th><th>Days of Stock</th></tr></thead>
+        <tbody>
+        {% for v in a_items %}
+        <tr>
+            <td>{{ v.variant.product.title }}{% if v.variant.title != "Default Title" %} - {{ v.variant.title }}{% endif %}</td>
+            <td>{{ v.variant.sku|default:"-" }}</td>
+            <td>{{ v.total_sold_30d }}</td>
+            <td>{{ v.total_sold_90d }}</td>
+            <td>{{ v.avg_daily_sales_30d|floatformat:1 }}</td>
+            <td>{% if v.days_of_stock is not None %}{% if v.days_of_stock <= 7 %}<span style="color:#d72c0d;font-weight:600;">{{ v.days_of_stock }}d</span>{% elif v.days_of_stock <= 14 %}<span style="color:#b98900;">{{ v.days_of_stock }}d</span>{% else %}{{ v.days_of_stock }}d{% endif %}{% else %}-{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}<p style="color:#6d7175;">No data yet.</p>{% endif %}
+</div>
+
+<div class="content-card" style="margin-bottom: 16px;">
+    <h3 style="margin: 0 0 8px; color: #3b5998;">B Items — Next 15% Revenue ({{ b_items.count }})</h3>
+    {% if b_items %}
+    <table>
+        <thead><tr><th>Product</th><th>SKU</th><th>30d Sales</th><th>Daily Avg</th><th>Days of Stock</th></tr></thead>
+        <tbody>
+        {% for v in b_items %}
+        <tr>
+            <td>{{ v.variant.product.title }}{% if v.variant.title != "Default Title" %} - {{ v.variant.title }}{% endif %}</td>
+            <td>{{ v.variant.sku|default:"-" }}</td>
+            <td>{{ v.total_sold_30d }}</td>
+            <td>{{ v.avg_daily_sales_30d|floatformat:1 }}</td>
+            <td>{{ v.days_of_stock|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}<p style="color:#6d7175;">No data yet.</p>{% endif %}
+</div>
+
+<div class="content-card">
+    <h3 style="margin: 0 0 8px; color: #6d7175;">C Items — Bottom 5% Revenue ({{ c_items.count }})</h3>
+    <p style="font-size: 13px; color: #6d7175; margin: 0 0 12px;">Consider reducing reorder quantities or liquidating.</p>
+    {% if c_items %}
+    <table>
+        <thead><tr><th>Product</th><th>SKU</th><th>90d Sales</th><th>Daily Avg</th><th>Dead?</th></tr></thead>
+        <tbody>
+        {% for v in c_items|slice:":50" %}
+        <tr>
+            <td>{{ v.variant.product.title }}{% if v.variant.title != "Default Title" %} - {{ v.variant.title }}{% endif %}</td>
+            <td>{{ v.variant.sku|default:"-" }}</td>
+            <td>{{ v.total_sold_90d }}</td>
+            <td>{{ v.avg_daily_sales_90d|floatformat:2 }}</td>
+            <td>{% if v.is_dead_stock %}<span style="color:#d72c0d;">Yes</span>{% else %}No{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}<p style="color:#6d7175;">No data yet.</p>{% endif %}
+</div>
+{% endblock %}

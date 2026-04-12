@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="metric-grid">
+    <div class="metric-card">
+        <h3>Total SKUs</h3>
+        <div class="value">{{ total_variants }}</div>
+    </div>
+    <div class="metric-card">
+        <h3>Suppliers</h3>
+        <div class="value">{{ total_suppliers }}</div>
+    </div>
+    <div class="metric-card">
+        <h3>Open POs</h3>
+        <div class="value">{{ open_pos }}</div>
+    </div>
+    <div class="metric-card">
+        <h3>Low Stock Items</h3>
+        <div class="value warning">{{ low_stock_count }}</div>
+    </div>
+    <div class="metric-card">
+        <h3>Dead Stock</h3>
+        <div class="value danger">{{ dead_stock_count }}</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div class="content-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 style="margin: 0;">Recent Purchase Orders</h2>
+            <a href="/purchase-orders/new" class="btn btn-primary">+ New PO</a>
+        </div>
+        {% if recent_pos %}
+        <table>
+            <thead>
+                <tr>
+                    <th>PO #</th>
+                    <th>Supplier</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for po in recent_pos %}
+                <tr>
+                    <td><a href="/purchase-orders/{{ po.id }}">{{ po.po_number }}</a></td>
+                    <td>{{ po.supplier.name }}</td>
+                    <td><span class="badge badge-{{ po.status }}">{{ po.get_status_display }}</span></td>
+                    <td>{{ po.currency }} {{ po.total }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #6d7175; font-size: 14px;">No purchase orders yet. Create your first one!</p>
+        {% endif %}
+    </div>
+
+    <div class="content-card">
+        <h2>Quick Actions</h2>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <a href="/purchase-orders/new" class="btn btn-outline" style="justify-content: center;">Create Purchase Order</a>
+            <a href="/suppliers/new" class="btn btn-outline" style="justify-content: center;">Add Supplier</a>
+            <a href="/inventory/fill-shelves" class="btn btn-outline" style="justify-content: center;">Fill Shelves (Auto-Reorder)</a>
+            <a href="/reports/low-stock" class="btn btn-outline" style="justify-content: center;">View Low Stock Report</a>
+            <a href="/inventory/sync" class="btn btn-outline" style="justify-content: center;">Sync from Shopify</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

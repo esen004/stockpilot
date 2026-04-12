@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #333; margin: 40px; }
+    h1 { font-size: 24px; margin: 0 0 4px; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+    .header-left h1 { color: #008060; }
+    .meta { font-size: 11px; color: #666; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { background: #f6f6f7; padding: 8px 10px; text-align: left; font-size: 11px; border-bottom: 2px solid #ddd; }
+    td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+    .totals { margin-top: 20px; text-align: right; }
+    .totals td { border: none; padding: 4px 10px; }
+    .total-row td { font-weight: bold; font-size: 14px; border-top: 2px solid #333; }
+    .notes { margin-top: 30px; padding: 12px; background: #f9f9f9; border-radius: 4px; }
+</style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>PURCHASE ORDER</h1>
+            <div class="meta">PO-{{ po.po_number }}</div>
+        </div>
+        <div style="text-align: right;">
+            <strong>{{ shop.store_name }}</strong><br>
+            {{ shop.store_email }}
+        </div>
+    </div>
+
+    <table style="width: 50%; margin-bottom: 20px;">
+        <tr><td style="font-weight:bold; width:120px; border:none;">Supplier:</td><td style="border:none;">{{ po.supplier.name }}</td></tr>
+        {% if po.supplier.contact_name %}<tr><td style="border:none;">Contact:</td><td style="border:none;">{{ po.supplier.contact_name }}</td></tr>{% endif %}
+        {% if po.supplier.email %}<tr><td style="border:none;">Email:</td><td style="border:none;">{{ po.supplier.email }}</td></tr>{% endif %}
+        <tr><td style="border:none;">Order Date:</td><td style="border:none;">{{ po.order_date|date:"M d, Y"|default:"Draft" }}</td></tr>
+        {% if po.expected_date %}<tr><td style="border:none;">Expected:</td><td style="border:none;">{{ po.expected_date|date:"M d, Y" }}</td></tr>{% endif %}
+        <tr><td style="border:none;">Terms:</td><td style="border:none;">{{ po.payment_terms|default:po.supplier.get_payment_terms_display }}</td></tr>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>SKU</th>
+                <th style="text-align:right;">Qty</th>
+                <th style="text-align:right;">Unit Cost</th>
+                <th style="text-align:right;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in line_items %}
+            <tr>
+                <td>{{ item.description|default:item.variant }}</td>
+                <td>{{ item.sku|default:"-" }}</td>
+                <td style="text-align:right;">{{ item.quantity }}</td>
+                <td style="text-align:right;">{{ po.currency }} {{ item.unit_cost }}</td>
+                <td style="text-align:right;">{{ po.currency }} {{ item.line_total }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="totals" style="width: 300px; margin-left: auto;">
+        <tr><td>Subtotal:</td><td style="text-align:right;">{{ po.currency }} {{ po.subtotal }}</td></tr>
+        {% if po.shipping_cost %}<tr><td>Shipping:</td><td style="text-align:right;">{{ po.currency }} {{ po.shipping_cost }}</td></tr>{% endif %}
+        {% if po.tax %}<tr><td>Tax:</td><td style="text-align:right;">{{ po.currency }} {{ po.tax }}</td></tr>{% endif %}
+        <tr class="total-row"><td>Total:</td><td style="text-align:right;">{{ po.currency }} {{ po.total }}</td></tr>
+    </table>
+
+    {% if po.notes %}
+    <div class="notes">
+        <strong>Notes:</strong><br>
+        {{ po.notes }}
+    </div>
+    {% endif %}
+</body>
+</html>

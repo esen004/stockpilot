@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}PO-{{ po.po_number }}{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div>
+        <h2 style="margin: 0;">PO-{{ po.po_number }}</h2>
+        <span style="font-size: 13px; color: #6d7175;">{{ po.supplier.name }} &middot; <span class="badge badge-{{ po.status }}">{{ po.get_status_display }}</span></span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        {% if po.status == "draft" %}
+        <a href="{% url 'po_add_items' po.id %}" class="btn btn-outline">+ Add Items</a>
+        <a href="{% url 'po_fill_shelves' po.id %}" class="btn btn-outline">Fill Shelves</a>
+        <form method="post" action="{% url 'po_mark_ordered' po.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Mark as Ordered</button>
+        </form>
+        {% endif %}
+        {% if po.status == "ordered" or po.status == "partial" %}
+        <a href="{% url 'po_receive' po.id %}" class="btn btn-primary">Receive Items</a>
+        {% endif %}
+        <a href="{% url 'po_pdf' po.id %}" class="btn btn-outline">PDF</a>
+        {% if po.supplier.email %}
+        <form method="post" action="{% url 'po_send_email' po.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline">Email to Supplier</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+    <div class="content-card">
+        <h3 style="margin: 0 0 4px; font-size: 13px; color: #6d7175;">Order Date</h3>
+        <div style="font-size: 16px; font-weight: 500;">{{ po.order_date|date:"M d, Y"|default:"Not ordered" }}</div>
+    </div>
+    <div class="content-card">
+        <h3 style="margin: 0 0 4px; font-size: 13px; color: #6d7175;">Expected Delivery</h3>
+        <div style="font-size: 16px; font-weight: 500;">{{ po.expected_date|date:"M d, Y"|default:"TBD" }}</div>
+    </div>
+    <div class="content-card">
+        <h3 style="margin: 0 0 4px; font-size: 13px; color: #6d7175;">Total</h3>
+        <div style="font-size: 16px; font-weight: 600;">{{ po.currency }} {{ po.total }}</div>
+    </div>
+</div>
+
+<div class="content-card">
+    <h3 style="margin: 0 0 12px; font-size: 14px;">Line Items</h3>
+    {% if line_items %}
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Qty Ordered</th>
+                <th>Received</th>
+                <th>Remaining</th>
+                <th>Unit Cost</th>
+                <th>Line Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in line_items %}
+            <tr>
+                <td>{{ item.description|default:item.variant }}</td>
+                <td>{{ item.sku|default:"-" }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.received_qty }}</td>
+                <td>{% if item.remaining_qty > 0 %}<span style="color: #b98900;">{{ item.remaining_qty }}</span>{% else %}<span style="color: #0c5132;">0</span>{% endif %}</td>
+                <td>{{ item.unit_cost }}</td>
+                <td>{{ item.line_total }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="6" style="text-align: right; font-weight: 600;">Subtotal</td>
+                <td style="font-weight: 600;">{{ po.subtotal }}</td>
+            </tr>
+            {% if po.shipping_cost %}
+            <tr>
+                <td colspan="6" style="text-align: right;">Shipping</td>
+                <td>{{ po.shipping_cost }}</td>
+            </tr>
+            {% endif %}
+            {% if po.tax %}
+            <tr>
+                <td colspan="6" style="text-align: right;">Tax</td>
+                <td>{{ po.tax }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td colspan="6" style="text-align: right; font-weight: 600; font-size: 16px;">Total</td>
+                <td style="font-weight: 600; font-size: 16px;">{{ po.currency }} {{ po.total }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <p style="color: #6d7175;">No items yet. <a href="{% url 'po_add_items' po.id %}">Add items</a> or <a href="{% url 'po_fill_shelves' po.id %}">use Fill Shelves</a>.</p>
+    {% endif %}
+</div>
+
+{% if po.notes %}
+<div class="content-card">
+    <h3 style="margin: 0 0 8px; font-size: 14px;">Notes</h3>
+    <p style="color: #6d7175; font-size: 14px;">{{ po.notes }}</p>
+</div>
+{% endif %}
+
+{% if po.sent_to_supplier_at %}
+<div style="font-size: 12px; color: #6d7175; margin-top: 8px;">
+    Sent to supplier on {{ po.sent_to_supplier_at|date:"M d, Y H:i" }}
+</div>
+{% endif %}
+{% endblock %}

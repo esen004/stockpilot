@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Edit{% else %}New{% endif %} Supplier{% endblock %}
+{% block content %}
+<div class="content-card">
+    <h2>{% if editing %}Edit Supplier{% else %}Add Supplier{% endif %}</h2>
+    <form method="post" style="max-width: 600px;">
+        {% csrf_token %}
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Name *</span>
+                <input type="text" name="name" value="{{ supplier.name|default:'' }}" required
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">
+            </label>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Contact Name</span>
+                <input type="text" name="contact_name" value="{{ supplier.contact_name|default:'' }}"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">
+            </label>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Email</span>
+                <input type="email" name="email" value="{{ supplier.email|default:'' }}"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">
+            </label>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Phone</span>
+                <input type="text" name="phone" value="{{ supplier.phone|default:'' }}"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">
+            </label>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Address</span>
+                <textarea name="address" rows="3"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">{{ supplier.address|default:'' }}</textarea>
+            </label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <label>
+                    <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Currency</span>
+                    <select name="currency" style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px;">
+                        {% for code in "USD,EUR,GBP,CAD,AUD,NZD,SEK,NOK,DKK,CHF,JPY,CNY" %}
+                        <option value="{{ code }}" {% if supplier.currency == code %}selected{% endif %}>{{ code }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Payment Terms</span>
+                    <select name="payment_terms" style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px;">
+                        <option value="prepaid" {% if supplier.payment_terms == "prepaid" %}selected{% endif %}>Prepaid</option>
+                        <option value="net_15" {% if supplier.payment_terms == "net_15" %}selected{% endif %}>Net 15</option>
+                        <option value="net_30" {% if supplier.payment_terms == "net_30" %}selected{% endif %}>Net 30</option>
+                        <option value="net_60" {% if supplier.payment_terms == "net_60" %}selected{% endif %}>Net 60</option>
+                        <option value="on_receipt" {% if supplier.payment_terms == "on_receipt" %}selected{% endif %}>On Receipt</option>
+                    </select>
+                </label>
+                <label>
+                    <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Lead Time (days)</span>
+                    <input type="number" name="lead_time_days" value="{{ supplier.lead_time_days|default:7 }}" min="0"
+                        style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">
+                </label>
+            </div>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">Notes</span>
+                <textarea name="notes" rows="3"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">{{ supplier.notes|default:'' }}</textarea>
+            </label>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button type="submit" class="btn btn-primary">{% if editing %}Save Changes{% else %}Add Supplier{% endif %}</button>
+                <a href="{% url 'supplier_list' %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
