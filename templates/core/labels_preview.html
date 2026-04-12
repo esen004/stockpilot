@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Labels — PO-{{ po.po_number }}{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Price Labels — PO-{{ po.po_number }}</h2>
+        <a href="{% url 'print_labels' po.id %}?format=pdf&shop={{ shop.shopify_domain }}" class="btn btn-primary">Download PDF</a>
+    </div>
+    <p style="color: #6d7175; margin-bottom: 16px;">{{ labels|length }} labels for received items. Print and attach to products.</p>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+        {% for label in labels %}
+        {% for i in "x"|ljust:label.qty %}
+        <div style="border: 1px dashed #c9cccf; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">{{ label.name|truncatechars:40 }}</div>
+            <div style="font-size: 11px; color: #6d7175;">SKU: {{ label.sku|default:"N/A" }}</div>
+            {% if label.barcode %}<div style="font-size: 11px; color: #6d7175;">{{ label.barcode }}</div>{% endif %}
+            <div style="font-size: 22px; font-weight: 700; margin-top: 8px;">${{ label.price }}</div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

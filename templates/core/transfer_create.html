@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}New Transfer{% endblock %}
+{% block content %}
+<div class="content-card">
+    <h2>Create Transfer</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; max-width: 500px;">
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">From Location *</span>
+                <select name="from_location" required style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px;">
+                    {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>
+                <span style="font-size: 13px; font-weight: 500; color: #6d7175;">To Location *</span>
+                <select name="to_location" required style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px;">
+                    {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}
+                </select>
+            </label>
+        </div>
+        <table>
+            <thead><tr><th>Product</th><th>SKU</th><th style="width: 100px;">Qty to Transfer</th></tr></thead>
+            <tbody>
+            {% for v in variants %}
+            <tr>
+                <td>{{ v.product.title }}{% if v.title != "Default Title" %} - {{ v.title }}{% endif %}</td>
+                <td>{{ v.sku|default:"-" }}</td>
+                <td><input type="number" name="qty_{{ v.id }}" value="0" min="0" style="width: 80px; padding: 4px 8px; border: 1px solid #c9cccf; border-radius: 6px; font-size: 14px;"></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button type="submit" class="btn btn-primary">Create Transfer</button>
+            <a href="{% url 'transfer_list' %}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

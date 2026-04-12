@@ -2,7 +2,11 @@
 {% block title %}Reports{% endblock %}
 {% block content %}
 <h2 style="margin: 0 0 16px;">Reports</h2>
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+    <a href="{% url 'forecast' %}" class="content-card" style="text-decoration: none; color: inherit;">
+        <h3 style="margin: 0 0 8px; font-size: 16px; color: #008060;">Demand Forecast</h3>
+        <p style="color: #6d7175; font-size: 14px; margin: 0;">Reorder recommendations based on sales velocity, lead times, and safety stock.</p>
+    </a>
     <a href="{% url 'report_abc' %}" class="content-card" style="text-decoration: none; color: inherit;">
         <h3 style="margin: 0 0 8px; font-size: 16px;">ABC Analysis</h3>
         <p style="color: #6d7175; font-size: 14px; margin: 0;">Classify products by revenue contribution. Focus on your top sellers.</p>

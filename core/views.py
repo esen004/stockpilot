@@ -700,6 +700,422 @@ def report_dead_stock(request):
 
 
 # =============================================================
+# STOCKTAKES
+# =============================================================
+
+@_require_shop
+def stocktake_list(request):
+    from .models import Stocktake
+    stocktakes = Stocktake.objects.filter(shop=request.shop).select_related("location")
+    return render(request, "core/stocktake_list.html", {
+        "shop": request.shop,
+        "stocktakes": stocktakes,
+        "active_tab": "inventory",
+    })
+
+
+@_require_shop
+def stocktake_create(request):
+    from .models import Stocktake, StocktakeItem
+    locations = Location.objects.filter(shop=request.shop, is_active=True)
+
+    if request.method == "POST":
+        location = get_object_or_404(Location, id=request.POST.get("location"), shop=request.shop)
+        name = request.POST.get("name", "").strip() or f"Count {timezone.now().strftime('%Y-%m-%d')}"
+        scope = request.POST.get("scope", "all")
+
+        stocktake = Stocktake.objects.create(
+            shop=request.shop, location=location, name=name,
+        )
+
+        # Pre-populate with variants that have inventory at this location
+        variants = Variant.objects.filter(shop=request.shop)
+        count = 0
+        for variant in variants:
+            inv = InventoryLevel.objects.filter(variant=variant, location=location).first()
+            expected = inv.available if inv else 0
+            if scope == "all" or expected > 0:
+                StocktakeItem.objects.create(
+                    stocktake=stocktake, variant=variant, expected_qty=expected,
+                )
+                count += 1
+
+        stocktake.total_items = count
+        stocktake.save(update_fields=["total_items"])
+        return redirect("stocktake_count", stocktake_id=stocktake.id)
+
+    return render(request, "core/stocktake_create.html", {
+        "shop": request.shop,
+        "locations": locations,
+        "active_tab": "inventory",
+    })
+
+
+@_require_shop
+def stocktake_count(request, stocktake_id):
+    from .models import Stocktake, StocktakeItem
+    stocktake = get_object_or_404(Stocktake, id=stocktake_id, shop=request.shop)
+    items = stocktake.items.select_related("variant__product").order_by("variant__product__title")
+
+    if request.method == "POST":
+        counted = 0
+        for item in items:
+            qty_key = f"count_{item.id}"
+            val = request.POST.get(qty_key, "")
+            if val != "":
+                item.counted_qty = int(val)
+                item.save(update_fields=["counted_qty"])
+                counted += 1
+
+        stocktake.total_counted = counted
+        stocktake.save(update_fields=["total_counted"])
+        return redirect("stocktake_review", stocktake_id=stocktake.id)
+
+    return render(request, "core/stocktake_count.html", {
+        "shop": request.shop,
+        "stocktake": stocktake,
+        "items": items,
+        "active_tab": "inventory",
+    })
+
+
+@_require_shop
+def stocktake_review(request, stocktake_id):
+    from .models import Stocktake
+    stocktake = get_object_or_404(Stocktake, id=stocktake_id, shop=request.shop)
+    items = stocktake.items.select_related("variant__product").order_by("variant__product__title")
+
+    # Calculate variances
+    variances = []
+    total_var = 0
+    total_val = 0
+    for item in items:
+        if item.counted_qty is not None:
+            v = item.variance
+            val = v * float(item.variant.cost)
+            total_var += abs(v)
+            total_val += val
+            if v != 0:
+                variances.append({"item": item, "variance": v, "value": round(val, 2)})
+
+    return render(request, "core/stocktake_review.html", {
+        "shop": request.shop,
+        "stocktake": stocktake,
+        "variances": variances,
+        "total_variance": total_var,
+        "total_value": round(total_val, 2),
+        "active_tab": "inventory",
+    })
+
+
+@_require_shop
+@require_POST
+def stocktake_apply(request, stocktake_id):
+    """Apply stocktake — adjust Shopify inventory to match counted quantities."""
+    from .models import Stocktake
+    from .shopify_client import ShopifyClient
+
+    stocktake = get_object_or_404(Stocktake, id=stocktake_id, shop=request.shop)
+    client = ShopifyClient(request.shop)
+
+    for item in stocktake.items.all():
+        if item.counted_qty is not None and item.variance != 0:
+            try:
+                client.adjust_inventory(
+                    item.variant.shopify_inventory_item_id,
+                    stocktake.location.shopify_location_id,
+                    item.variance,
+                    reason="correction",
+                )
+            except Exception:
+                pass
+
+    stocktake.status = "completed"
+    stocktake.completed_at = timezone.now()
+    stocktake.total_variance = sum(
+        abs(i.variance) for i in stocktake.items.all() if i.counted_qty is not None
+    )
+    stocktake.save()
+    return redirect("stocktake_list")
+
+
+# =============================================================
+# TRANSFERS
+# =============================================================
+
+@_require_shop
+def transfer_list(request):
+    from .models import Transfer
+    transfers = Transfer.objects.filter(shop=request.shop).select_related(
+        "from_location", "to_location"
+    )
+    return render(request, "core/transfer_list.html", {
+        "shop": request.shop,
+        "transfers": transfers,
+        "active_tab": "inventory",
+    })
+
+
+@_require_shop
+def transfer_suggestions(request):
+    """Suggest transfers based on velocity vs stock per location."""
+    locations = Location.objects.filter(shop=request.shop, is_active=True)
+    if locations.count() < 2:
+        return render(request, "core/transfer_suggestions.html", {
+            "shop": request.shop, "suggestions": [], "single_location": True,
+            "active_tab": "inventory",
+        })
+
+    suggestions = []
+    variants = Variant.objects.filter(shop=request.shop).select_related("product")
+
+    for variant in variants:
+        levels = InventoryLevel.objects.filter(variant=variant).select_related("location")
+        if levels.count() < 2:
+            continue
+
+        # Find overstocked and understocked locations
+        loc_data = []
+        for level in levels:
+            velocity = SalesVelocity.objects.filter(variant=variant, location=level.location).first()
+            daily = float(velocity.avg_daily_sales_30d) if velocity else 0
+            days_left = round(level.available / daily, 1) if daily > 0 else 999
+            loc_data.append({
+                "location": level.location,
+                "stock": level.available,
+                "daily_sales": daily,
+                "days_left": days_left,
+            })
+
+        # If one location has >60 days and another has <14 days, suggest transfer
+        for over in loc_data:
+            for under in loc_data:
+                if over["location"] == under["location"]:
+                    continue
+                if over["days_left"] > 60 and under["days_left"] < 14 and under["daily_sales"] > 0:
+                    transfer_qty = min(
+                        int(under["daily_sales"] * 30),
+                        over["stock"] // 2,
+                    )
+                    if transfer_qty > 0:
+                        suggestions.append({
+                            "variant": variant,
+                            "from_loc": over["location"],
+                            "to_loc": under["location"],
+                            "qty": transfer_qty,
+                            "from_days": over["days_left"],
+                            "to_days": under["days_left"],
+                        })
+
+    return render(request, "core/transfer_suggestions.html", {
+        "shop": request.shop,
+        "suggestions": suggestions,
+        "single_location": False,
+        "active_tab": "inventory",
+    })
+
+
+@_require_shop
+def transfer_create(request):
+    from .models import Transfer, TransferItem
+    locations = Location.objects.filter(shop=request.shop, is_active=True)
+
+    if request.method == "POST":
+        from_loc = get_object_or_404(Location, id=request.POST.get("from_location"), shop=request.shop)
+        to_loc = get_object_or_404(Location, id=request.POST.get("to_location"), shop=request.shop)
+
+        transfer = Transfer.objects.create(
+            shop=request.shop, from_location=from_loc, to_location=to_loc,
+            notes=request.POST.get("notes", ""),
+        )
+
+        # Add items
+        for key, val in request.POST.items():
+            if key.startswith("qty_") and val:
+                vid = key.replace("qty_", "")
+                qty = int(val or 0)
+                if qty > 0:
+                    try:
+                        variant = Variant.objects.get(id=vid, shop=request.shop)
+                        TransferItem.objects.create(transfer=transfer, variant=variant, quantity=qty)
+                    except Variant.DoesNotExist:
+                        pass
+
+        return redirect("transfer_list")
+
+    variants = Variant.objects.filter(shop=request.shop).select_related("product")
+    return render(request, "core/transfer_create.html", {
+        "shop": request.shop,
+        "locations": locations,
+        "variants": variants[:200],
+        "active_tab": "inventory",
+    })
+
+
+# =============================================================
+# WEEKLY EMAIL REPORT
+# =============================================================
+
+def weekly_report(request):
+    """Cron endpoint — send weekly inventory digest to all active shops."""
+    from django.core.mail import send_mail
+    import traceback
+
+    results = []
+    for shop in Shop.objects.filter(is_active=True):
+        try:
+            low_stock = SalesVelocity.objects.filter(
+                variant__shop=shop, days_of_stock__isnull=False, days_of_stock__lte=14,
+            ).select_related("variant__product").count()
+
+            dead_stock = SalesVelocity.objects.filter(
+                variant__shop=shop, is_dead_stock=True,
+            ).count()
+
+            open_pos = PurchaseOrder.objects.filter(
+                shop=shop, status__in=["draft", "ordered", "partial"],
+            ).count()
+
+            # Dead stock value
+            dead_items = SalesVelocity.objects.filter(variant__shop=shop, is_dead_stock=True)
+            dead_value = 0
+            for d in dead_items:
+                inv = InventoryLevel.objects.filter(variant=d.variant).aggregate(s=Sum("available"))
+                dead_value += (inv["s"] or 0) * float(d.variant.cost)
+
+            body = f"""Weekly Inventory Report for {shop.store_name}
+{'=' * 50}
+
+Low Stock Items (< 14 days): {low_stock}
+Dead Stock Items (0 sales in 90d): {dead_stock}
+Dead Stock Value: ${dead_value:,.2f}
+Open Purchase Orders: {open_pos}
+
+View your dashboard: {settings.SHOPIFY_APP_URL}/?shop={shop.shopify_domain}
+
+— StockPilot
+"""
+            if shop.store_email:
+                send_mail(
+                    subject=f"[StockPilot] Weekly Report — {shop.store_name}",
+                    message=body,
+                    from_email="reports@stockpilot.app",
+                    recipient_list=[shop.store_email],
+                    fail_silently=True,
+                )
+            results.append(f"{shop.shopify_domain}: sent")
+        except Exception as e:
+            results.append(f"{shop.shopify_domain}: error — {e}")
+
+    return HttpResponse(f"Weekly report results:\n" + "\n".join(results))
+
+
+# =============================================================
+# DEMAND FORECASTING
+# =============================================================
+
+@_require_shop
+def forecast_view(request):
+    """Demand forecast with reorder recommendations."""
+    variants = Variant.objects.filter(shop=request.shop).select_related(
+        "product", "supplier"
+    ).prefetch_related("sales_velocity", "inventory_levels")
+
+    forecasts = []
+    for variant in variants:
+        velocity = SalesVelocity.objects.filter(variant=variant).first()
+        if not velocity:
+            continue
+        inv = InventoryLevel.objects.filter(variant=variant).aggregate(s=Sum("available"))
+        stock = inv["s"] or 0
+        daily_30 = float(velocity.avg_daily_sales_30d)
+        daily_7 = float(velocity.avg_daily_sales_7d)
+
+        if daily_30 <= 0:
+            continue
+
+        lead_time = variant.supplier.lead_time_days if variant.supplier else 7
+        safety_stock = int(daily_30 * 7)  # 7 days safety buffer
+        reorder_point = int(daily_30 * lead_time) + safety_stock
+        days_left = round(stock / daily_30, 1) if daily_30 > 0 else 999
+
+        # Trend: compare 7d vs 30d velocity
+        trend = "stable"
+        if daily_7 > 0 and daily_30 > 0:
+            ratio = daily_7 / daily_30
+            if ratio > 1.3:
+                trend = "rising"
+            elif ratio < 0.7:
+                trend = "falling"
+
+        # Reorder needed?
+        needs_reorder = stock <= reorder_point
+
+        forecasts.append({
+            "variant": variant,
+            "stock": stock,
+            "daily_sales": round(daily_30, 2),
+            "days_left": days_left,
+            "lead_time": lead_time,
+            "safety_stock": safety_stock,
+            "reorder_point": reorder_point,
+            "needs_reorder": needs_reorder,
+            "trend": trend,
+            "suggested_order": max(0, int(daily_30 * 30) + safety_stock - stock) if needs_reorder else 0,
+        })
+
+    # Sort by urgency
+    forecasts.sort(key=lambda x: x["days_left"])
+
+    return render(request, "core/forecast.html", {
+        "shop": request.shop,
+        "forecasts": forecasts,
+        "active_tab": "reports",
+    })
+
+
+# =============================================================
+# PRICE LABEL PRINTING
+# =============================================================
+
+@_require_shop
+def print_labels(request, po_id):
+    """Generate printable price labels from a received PO."""
+    po = get_object_or_404(PurchaseOrder, id=po_id, shop=request.shop)
+    line_items = po.line_items.select_related("variant__product").all()
+
+    labels = []
+    for item in line_items:
+        if item.received_qty > 0:
+            labels.append({
+                "name": str(item.variant),
+                "sku": item.sku or item.variant.sku,
+                "barcode": item.variant.barcode,
+                "price": item.variant.price,
+                "cost": item.unit_cost,
+                "qty": item.received_qty,
+            })
+
+    if request.GET.get("format") == "pdf":
+        html = render(request, "core/labels_pdf.html", {"labels": labels, "po": po}).content.decode()
+        try:
+            from weasyprint import HTML
+            pdf = HTML(string=html).write_pdf()
+            response = HttpResponse(pdf, content_type="application/pdf")
+            response["Content-Disposition"] = f'attachment; filename="Labels-PO-{po.po_number}.pdf"'
+            return response
+        except Exception as e:
+            return HttpResponse(f"PDF error: {e}", status=500)
+
+    return render(request, "core/labels_preview.html", {
+        "shop": request.shop,
+        "po": po,
+        "labels": labels,
+        "active_tab": "purchase_orders",
+    })
+
+
+# =============================================================
 # SALES VELOCITY CALCULATION (run daily)
 # =============================================================
 

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Review — {{ stocktake.name }}{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="margin: 0;">Variance Report — {{ stocktake.name }}</h2>
+    {% if stocktake.status == "in_progress" %}
+    <div style="display: flex; gap: 8px;">
+        <a href="{% url 'stocktake_count' stocktake.id %}" class="btn btn-outline">Back to Counting</a>
+        <form method="post" action="{% url 'stocktake_apply' stocktake.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary" onclick="return confirm('This will adjust Shopify inventory to match your counts. Continue?')">Apply Adjustments to Shopify</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+    <div class="metric-card">
+        <h3>Total Variances</h3>
+        <div class="value {% if total_variance > 0 %}warning{% endif %}">{{ total_variance }} units</div>
+    </div>
+    <div class="metric-card">
+        <h3>Variance Value</h3>
+        <div class="value {% if total_value != 0 %}danger{% endif %}">${{ total_value }}</div>
+    </div>
+</div>
+
+<div class="content-card">
+    {% if variances %}
+    <h3 style="margin: 0 0 12px;">Items with Variances ({{ variances|length }})</h3>
+    <table>
+        <thead><tr><th>Product</th><th>SKU</th><th>Expected</th><th>Counted</th><th>Variance</th><th>Value</th></tr></thead>
+        <tbody>
+        {% for v in variances %}
+        <tr>
+            <td>{{ v.item.variant.product.title }}{% if v.item.variant.title != "Default Title" %} - {{ v.item.variant.title }}{% endif %}</td>
+            <td>{{ v.item.variant.sku|default:"-" }}</td>
+            <td>{{ v.item.expected_qty }}</td>
+            <td>{{ v.item.counted_qty }}</td>
+            <td style="font-weight: 600; color: {% if v.variance > 0 %}#0c5132{% elif v.variance < 0 %}#d72c0d{% endif %};">
+                {% if v.variance > 0 %}+{% endif %}{{ v.variance }}
+            </td>
+            <td>${{ v.value }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #0c5132; font-weight: 500;">No variances found. All counts match expected quantities.</p>
+    {% endif %}
+</div>
+{% endblock %}

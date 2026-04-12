@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    @page { size: A4; margin: 10mm; }
+    body { font-family: Arial, sans-serif; margin: 0; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .label {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 10px;
+        text-align: center;
+        page-break-inside: avoid;
+    }
+    .label .name { font-size: 10px; font-weight: 600; margin-bottom: 2px; }
+    .label .sku { font-size: 9px; color: #666; }
+    .label .price { font-size: 20px; font-weight: 700; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="grid">
+    {% for label in labels %}
+    {% for i in "x"|ljust:label.qty %}
+    <div class="label">
+        <div class="name">{{ label.name|truncatechars:35 }}</div>
+        <div class="sku">SKU: {{ label.sku|default:"N/A" }}</div>
+        {% if label.barcode %}<div class="sku">{{ label.barcode }}</div>{% endif %}
+        <div class="price">${{ label.price }}</div>
+    </div>
+    {% endfor %}
+    {% endfor %}
+</div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Demand Forecast{% endblock %}
+{% block content %}
+<div class="content-card">
+    <h2>Demand Forecast &amp; Reorder Recommendations</h2>
+    <p style="color: #6d7175; margin-bottom: 16px;">Based on 30-day sales velocity, supplier lead times, and 7-day safety stock buffer.</p>
+    {% if forecasts %}
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Stock</th>
+                <th>Daily Sales</th>
+                <th>Days Left</th>
+                <th>Trend</th>
+                <th>Reorder Point</th>
+                <th>Safety Stock</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for f in forecasts %}
+        <tr style="{% if f.needs_reorder %}background: #fff3cd;{% endif %}">
+            <td>
+                {{ f.variant.product.title }}{% if f.variant.title != "Default Title" %} - {{ f.variant.title }}{% endif %}
+                {% if f.variant.supplier %}<br><span style="font-size: 12px; color: #6d7175;">{{ f.variant.supplier.name }}</span>{% endif %}
+            </td>
+            <td>{{ f.stock }}</td>
+            <td>{{ f.daily_sales }}/day</td>
+            <td>
+                {% if f.days_left <= 7 %}<span style="color: #d72c0d; font-weight: 700;">{{ f.days_left }}d</span>
+                {% elif f.days_left <= 14 %}<span style="color: #b98900; font-weight: 600;">{{ f.days_left }}d</span>
+                {% else %}{{ f.days_left }}d{% endif %}
+            </td>
+            <td>
+                {% if f.trend == "rising" %}<span style="color: #d72c0d;">&#9650; Rising</span>
+                {% elif f.trend == "falling" %}<span style="color: #0c5132;">&#9660; Falling</span>
+                {% else %}&#8212; Stable{% endif %}
+            </td>
+            <td>{{ f.reorder_point }}</td>
+            <td>{{ f.safety_stock }}</td>
+            <td>
+                {% if f.needs_reorder %}
+                <span style="color: #d72c0d; font-weight: 600;">ORDER {{ f.suggested_order }} units</span>
+                {% else %}
+                <span style="color: #0c5132;">OK</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #6d7175;">No forecast data yet. Sync your products and wait for sales velocity data to build up.</p>
+    {% endif %}
+</div>
+{% endblock %}

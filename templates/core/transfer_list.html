@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Transfers{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Inventory Transfers</h2>
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'transfer_suggestions' %}" class="btn btn-outline">View Suggestions</a>
+            <a href="{% url 'transfer_create' %}" class="btn btn-primary">+ New Transfer</a>
+        </div>
+    </div>
+    {% if transfers %}
+    <table>
+        <thead><tr><th>From</th><th>To</th><th>Status</th><th>Items</th><th>Created</th></tr></thead>
+        <tbody>
+        {% for t in transfers %}
+        <tr>
+            <td>{{ t.from_location.name }}</td>
+            <td>{{ t.to_location.name }}</td>
+            <td><span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span></td>
+            <td>{{ t.items.count }}</td>
+            <td>{{ t.created_at|date:"M d, Y" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #6d7175;">No transfers yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -289,3 +289,97 @@ class SalesVelocity(models.Model):
 
     def __str__(self):
         return f"{self.variant} velocity: {self.avg_daily_sales_30d}/day"
+
+
+class Stocktake(models.Model):
+    """Inventory count session."""
+
+    STATUS_CHOICES = [
+        ("in_progress", "In Progress"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name="stocktakes")
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="stocktakes")
+    name = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="in_progress")
+    notes = models.TextField(blank=True)
+
+    total_items = models.PositiveIntegerField(default=0)
+    total_counted = models.PositiveIntegerField(default=0)
+    total_variance = models.IntegerField(default=0)
+    variance_value = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"{self.name} @ {self.location}"
+
+
+class StocktakeItem(models.Model):
+    """Individual item in a stocktake."""
+
+    stocktake = models.ForeignKey(Stocktake, on_delete=models.CASCADE, related_name="items")
+    variant = models.ForeignKey(Variant, on_delete=models.CASCADE, related_name="stocktake_items")
+    expected_qty = models.IntegerField(default=0)
+    counted_qty = models.IntegerField(null=True, blank=True)
+
+    @property
+    def variance(self):
+        if self.counted_qty is None:
+            return 0
+        return self.counted_qty - self.expected_qty
+
+    @property
+    def is_counted(self):
+        return self.counted_qty is not None
+
+    def __str__(self):
+        return f"{self.variant}: expected={self.expected_qty}, counted={self.counted_qty}"
+
+
+class Transfer(models.Model):
+    """Inventory transfer between locations."""
+
+    STATUS_CHOICES = [
+        ("draft", "Draft"),
+        ("in_transit", "In Transit"),
+        ("received", "Received"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name="transfers")
+    from_location = models.ForeignKey(
+        Location, on_delete=models.CASCADE, related_name="transfers_out"
+    )
+    to_location = models.ForeignKey(
+        Location, on_delete=models.CASCADE, related_name="transfers_in"
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Transfer {self.from_location} → {self.to_location}"
+
+
+class TransferItem(models.Model):
+    """Item in a transfer."""
+
+    transfer = models.ForeignKey(Transfer, on_delete=models.CASCADE, related_name="items")
+    variant = models.ForeignKey(Variant, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    received_qty = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.variant} x{self.quantity}"

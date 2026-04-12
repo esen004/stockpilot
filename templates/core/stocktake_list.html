@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Stocktakes{% endblock %}
+{% block content %}
+<div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Inventory Counts</h2>
+        <a href="{% url 'stocktake_create' %}" class="btn btn-primary">+ New Count</a>
+    </div>
+    {% if stocktakes %}
+    <table>
+        <thead><tr><th>Name</th><th>Location</th><th>Status</th><th>Items</th><th>Counted</th><th>Variance</th><th>Date</th></tr></thead>
+        <tbody>
+        {% for s in stocktakes %}
+        <tr>
+            <td>
+                {% if s.status == "in_progress" %}<a href="{% url 'stocktake_count' s.id %}">{{ s.name }}</a>
+                {% else %}<a href="{% url 'stocktake_review' s.id %}">{{ s.name }}</a>{% endif %}
+            </td>
+            <td>{{ s.location.name }}</td>
+            <td><span class="badge badge-{{ s.status }}">{{ s.get_status_display }}</span></td>
+            <td>{{ s.total_items }}</td>
+            <td>{{ s.total_counted }}</td>
+            <td>{{ s.total_variance }}</td>
+            <td>{{ s.started_at|date:"M d, Y" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #6d7175;">No inventory counts yet. Start one to verify your stock levels.</p>
+    {% endif %}
+</div>
+{% endblock %}

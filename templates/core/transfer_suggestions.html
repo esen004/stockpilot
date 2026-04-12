@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Transfer Suggestions{% endblock %}
+{% block content %}
+<div class="content-card">
+    <h2>Transfer Suggestions</h2>
+    {% if single_location %}
+    <p style="color: #6d7175;">Transfer suggestions require 2+ locations. Your store currently has only one location.</p>
+    {% elif suggestions %}
+    <p style="color: #6d7175; margin-bottom: 16px;">Based on sales velocity: move stock from overstocked locations to locations running low.</p>
+    <table>
+        <thead><tr><th>Product</th><th>From</th><th>From Days</th><th>To</th><th>To Days</th><th>Suggested Qty</th></tr></thead>
+        <tbody>
+        {% for s in suggestions %}
+        <tr>
+            <td>{{ s.variant.product.title }}{% if s.variant.title != "Default Title" %} - {{ s.variant.title }}{% endif %}</td>
+            <td>{{ s.from_loc.name }}</td>
+            <td>{{ s.from_days }}d</td>
+            <td>{{ s.to_loc.name }}</td>
+            <td><span style="color: #d72c0d; font-weight: 600;">{{ s.to_days }}d</span></td>
+            <td style="font-weight: 500;">{{ s.qty }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #0c5132;">No transfer suggestions. All locations are balanced.</p>
+    {% endif %}
+</div>
+{% endblock %}
