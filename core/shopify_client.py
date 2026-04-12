@@ -144,10 +144,10 @@ class ShopifyClient:
                         defaults={
                             "product": product,
                             "shopify_inventory_item_id": inv_item_id,
-                            "title": v.get("title", "Default Title"),
-                            "sku": v.get("sku", ""),
-                            "barcode": v.get("barcode", ""),
-                            "price": float(v.get("price", 0)),
+                            "title": v.get("title") or "Default Title",
+                            "sku": v.get("sku") or "",
+                            "barcode": v.get("barcode") or "",
+                            "price": float(v.get("price") or 0),
                             "cost": cost,
                         },
                     )
