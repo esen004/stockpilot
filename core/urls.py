@@ -2,8 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Debug
+    # Debug + Legal
     path("debug", views.debug_view, name="debug"),
+    path("privacy", views.privacy_policy, name="privacy"),
 
     # Dashboard
     path("", views.dashboard, name="dashboard"),

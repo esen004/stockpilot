@@ -1,0 +1,18 @@
+client_id = "128f80ac998d617efdb21cce5f85a669"
+name = "StockPilot"
+application_url = "https://stockpilot-v63z.onrender.com"
+embedded = true
+
+[access_scopes]
+scopes = "read_products,read_inventory,write_inventory,read_orders,read_locations"
+
+[auth]
+redirect_urls = ["https://stockpilot-v63z.onrender.com/auth/callback"]
+
+[webhooks]
+api_version = "2025-04"
+
+[webhooks.privacy_compliance]
+customer_data_request_url = "https://stockpilot-v63z.onrender.com/webhooks/customers-data-request"
+customer_deletion_url = "https://stockpilot-v63z.onrender.com/webhooks/customers-redact"
+shop_deletion_url = "https://stockpilot-v63z.onrender.com/webhooks/shop-redact"

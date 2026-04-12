@@ -61,6 +61,40 @@ def _require_shop(view_func):
     return wrapper
 
 
+# --- Legal ---
+
+def privacy_policy(request):
+    return HttpResponse("""
+    <html><head><title>StockPilot Privacy Policy</title>
+    <style>body{font-family:-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333;}h1{font-size:24px;}h2{font-size:18px;margin-top:24px;}</style>
+    </head><body>
+    <h1>StockPilot Privacy Policy</h1>
+    <p>Last updated: April 12, 2026</p>
+
+    <h2>What data we collect</h2>
+    <p>StockPilot accesses your Shopify store data to provide inventory management services. This includes: product names, SKUs, prices, costs, inventory levels, locations, and order history (for sales velocity calculations). We store supplier information and purchase orders that you create within the app.</p>
+
+    <h2>How we use your data</h2>
+    <p>Your data is used solely to provide StockPilot's inventory management features: purchase orders, supplier management, inventory counts, sales velocity calculations, demand forecasting, and reporting. We do not sell, share, or use your data for any other purpose.</p>
+
+    <h2>Data storage</h2>
+    <p>Your data is stored securely in a PostgreSQL database hosted by Neon (neon.tech) with encryption in transit. Access tokens are stored encrypted and used only to communicate with Shopify's API on your behalf.</p>
+
+    <h2>Customer data</h2>
+    <p>StockPilot does not access, collect, or store any customer personal information. We only access product, inventory, and order data (order totals and line items for sales velocity — no customer names, emails, or addresses).</p>
+
+    <h2>Data deletion</h2>
+    <p>When you uninstall StockPilot, we receive a notification from Shopify and mark your account as inactive. Within 48 hours, all your data (suppliers, purchase orders, inventory counts, and settings) is permanently deleted from our systems.</p>
+
+    <h2>Third-party services</h2>
+    <p>StockPilot uses: Shopify API (to sync your store data), Neon PostgreSQL (database hosting), and Render (application hosting). No other third-party services have access to your data.</p>
+
+    <h2>Contact</h2>
+    <p>For privacy questions, contact us at: esengad004@gmail.com</p>
+    </body></html>
+    """)
+
+
 # --- Debug ---
 
 def debug_view(request):
