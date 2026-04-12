@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: stockpilot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn stockpilot.wsgi --bind 0.0.0.0:$PORT --workers 2
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: SHOPIFY_API_KEY
+        sync: false
+      - key: SHOPIFY_API_SECRET
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.4"
