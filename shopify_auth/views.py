@@ -117,6 +117,63 @@ def callback(request):
     return redirect(f"https://{shop}/admin/apps/{settings.SHOPIFY_API_KEY}")
 
 
+def manual_setup(request):
+    """Emergency setup — re-register shop after DB wipe.
+    Uninstall and reinstall the app from Shopify admin to trigger fresh OAuth.
+    OR use this with ?shop=xxx&token=xxx to manually insert.
+    """
+    import traceback
+    shop_domain = request.GET.get("shop", "")
+    token = request.GET.get("token", "")
+
+    if not shop_domain:
+        # Show a form
+        return HttpResponse("""
+            <h2>Manual Shop Setup</h2>
+            <p>The database was reset. To fix this:</p>
+            <ol>
+                <li>Go to your Shopify admin → Settings → Apps</li>
+                <li>Uninstall StockPilot</li>
+                <li>Then reinstall from: <a href="/auth/install?shop=stockpdev.myshopify.com">/auth/install?shop=stockpdev.myshopify.com</a></li>
+            </ol>
+            <hr>
+            <p>Or if you have the access token, enter it below:</p>
+            <form method="get">
+                <label>Shop domain: <input name="shop" value="stockpdev.myshopify.com"></label><br><br>
+                <label>Access token: <input name="token" size="60"></label><br><br>
+                <button type="submit">Save</button>
+            </form>
+        """)
+
+    if token:
+        try:
+            shop_obj, created = Shop.objects.update_or_create(
+                shopify_domain=shop_domain,
+                defaults={
+                    "access_token": token,
+                    "is_active": True,
+                    "uninstalled_at": None,
+                },
+            )
+            try:
+                _fetch_store_info(shop_obj)
+            except Exception:
+                pass
+
+            request.session["shop_id"] = shop_obj.id
+            return HttpResponse(
+                f"<h2>Shop saved!</h2>"
+                f"<p>{shop_obj.shopify_domain} — {shop_obj.store_name}</p>"
+                f"<p><a href='/?shop={shop_domain}'>Go to Dashboard</a></p>"
+                f"<p><a href='/sync?shop={shop_domain}'>Sync Products</a></p>"
+            )
+        except Exception as e:
+            return HttpResponse(f"<pre>Error: {e}\n{traceback.format_exc()}</pre>")
+
+    # No token — try to get it via OAuth
+    return redirect(f"/auth/install?shop={shop_domain}")
+
+
 def _fetch_store_info(shop_obj):
     query = """{ shop { name email currencyCode } }"""
     data = _graphql(shop_obj, query)
