@@ -8,17 +8,17 @@
     </div>
     <div style="display: flex; gap: 8px;">
         {% if po.status == "draft" %}
-        <a href="{% url 'po_add_items' po.id %}" class="btn btn-outline">+ Add Items</a>
-        <a href="{% url 'po_fill_shelves' po.id %}" class="btn btn-outline">Fill Shelves</a>
+        <a href="{% url 'po_add_items' po.id %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">+ Add Items</a>
+        <a href="{% url 'po_fill_shelves' po.id %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">Fill Shelves</a>
         <form method="post" action="{% url 'po_mark_ordered' po.id %}" style="display:inline;">
             {% csrf_token %}
             <button type="submit" class="btn btn-primary">Mark as Ordered</button>
         </form>
         {% endif %}
         {% if po.status == "ordered" or po.status == "partial" %}
-        <a href="{% url 'po_receive' po.id %}" class="btn btn-primary">Receive Items</a>
+        <a href="{% url 'po_receive' po.id %}?shop={{ shop.shopify_domain }}" class="btn btn-primary">Receive Items</a>
         {% endif %}
-        <a href="{% url 'po_pdf' po.id %}" class="btn btn-outline">PDF</a>
+        <a href="{% url 'po_pdf' po.id %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">PDF</a>
         {% if po.supplier.email %}
         <form method="post" action="{% url 'po_send_email' po.id %}" style="display:inline;">
             {% csrf_token %}
@@ -95,7 +95,7 @@
         </tfoot>
     </table>
     {% else %}
-    <p style="color: #6d7175;">No items yet. <a href="{% url 'po_add_items' po.id %}">Add items</a> or <a href="{% url 'po_fill_shelves' po.id %}">use Fill Shelves</a>.</p>
+    <p style="color: #6d7175;">No items yet. <a href="{% url 'po_add_items' po.id %}?shop={{ shop.shopify_domain }}">Add items</a> or <a href="{% url 'po_fill_shelves' po.id %}?shop={{ shop.shopify_domain }}">use Fill Shelves</a>.</p>
     {% endif %}
 </div>
 

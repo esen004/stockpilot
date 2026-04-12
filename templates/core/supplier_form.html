@@ -63,7 +63,7 @@
             </label>
             <div style="display: flex; gap: 8px; margin-top: 8px;">
                 <button type="submit" class="btn btn-primary">{% if editing %}Save Changes{% else %}Add Supplier{% endif %}</button>
-                <a href="{% url 'supplier_list' %}" class="btn btn-outline">Cancel</a>
+                <a href="{% url 'supplier_list' %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">Cancel</a>
             </div>
         </div>
     </form>

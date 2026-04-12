@@ -5,7 +5,7 @@
     <h2 style="margin: 0;">Variance Report — {{ stocktake.name }}</h2>
     {% if stocktake.status == "in_progress" %}
     <div style="display: flex; gap: 8px;">
-        <a href="{% url 'stocktake_count' stocktake.id %}" class="btn btn-outline">Back to Counting</a>
+        <a href="{% url 'stocktake_count' stocktake.id %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">Back to Counting</a>
         <form method="post" action="{% url 'stocktake_apply' stocktake.id %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-primary" onclick="return confirm('This will adjust Shopify inventory to match your counts. Continue?')">Apply Adjustments to Shopify</button>

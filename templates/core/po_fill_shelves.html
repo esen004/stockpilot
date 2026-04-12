@@ -54,11 +54,11 @@
         </table>
         <div style="display: flex; gap: 8px; margin-top: 16px;">
             <button type="submit" class="btn btn-primary">Add to PO</button>
-            <a href="{% url 'po_detail' po.id %}" class="btn btn-outline">Cancel</a>
+            <a href="{% url 'po_detail' po.id %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">Cancel</a>
         </div>
     </form>
     {% else %}
-    <p style="color: #6d7175;">No reorder suggestions. Either all items are well-stocked or no sales velocity data available yet. <a href="{% url 'sync' %}">Sync from Shopify</a> to get the latest data.</p>
+    <p style="color: #6d7175;">No reorder suggestions. Either all items are well-stocked or no sales velocity data available yet. <a href="{% url 'sync' %}?shop={{ shop.shopify_domain }}">Sync from Shopify</a> to get the latest data.</p>
     {% endif %}
 </div>
 {% endblock %}

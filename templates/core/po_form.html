@@ -36,12 +36,12 @@
             </label>
             <div style="display: flex; gap: 8px; margin-top: 8px;">
                 <button type="submit" class="btn btn-primary">Create PO</button>
-                <a href="{% url 'po_list' %}" class="btn btn-outline">Cancel</a>
+                <a href="{% url 'po_list' %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">Cancel</a>
             </div>
         </div>
     </form>
     {% if not suppliers %}
-    <p style="color: #d72c0d; margin-top: 12px; font-size: 14px;">You need to <a href="{% url 'supplier_create' %}">add a supplier</a> first.</p>
+    <p style="color: #d72c0d; margin-top: 12px; font-size: 14px;">You need to <a href="{% url 'supplier_create' %}?shop={{ shop.shopify_domain }}">add a supplier</a> first.</p>
     {% endif %}
 </div>
 {% endblock %}

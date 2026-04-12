@@ -12,7 +12,7 @@
         Upgrade your plan to add more.
     </p>
     <div style="display: flex; gap: 8px; justify-content: center; margin-top: 24px;">
-        <a href="{% url 'billing_select' %}" class="btn btn-primary">Upgrade Plan</a>
+        <a href="{% url 'billing_select' %}?shop={{ shop.shopify_domain }}" class="btn btn-primary">Upgrade Plan</a>
         <a href="javascript:history.back()" class="btn btn-outline">Go Back</a>
     </div>
 </div>

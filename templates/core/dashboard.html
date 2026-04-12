@@ -29,7 +29,7 @@
     <div class="content-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h2 style="margin: 0;">Recent Purchase Orders</h2>
-            <a href="/purchase-orders/new" class="btn btn-primary">+ New PO</a>
+            <a href="/purchase-orders/new?shop={{ shop.shopify_domain }}" class="btn btn-primary">+ New PO</a>
         </div>
         {% if recent_pos %}
         <table>
@@ -44,7 +44,7 @@
             <tbody>
             {% for po in recent_pos %}
                 <tr>
-                    <td><a href="/purchase-orders/{{ po.id }}">{{ po.po_number }}</a></td>
+                    <td><a href="/purchase-orders/{{ po.id }}?shop={{ shop.shopify_domain }}">{{ po.po_number }}</a></td>
                     <td>{{ po.supplier.name }}</td>
                     <td><span class="badge badge-{{ po.status }}">{{ po.get_status_display }}</span></td>
                     <td>{{ po.currency }} {{ po.total }}</td>
@@ -60,11 +60,11 @@
     <div class="content-card">
         <h2>Quick Actions</h2>
         <div style="display: flex; flex-direction: column; gap: 8px;">
-            <a href="/purchase-orders/new" class="btn btn-outline" style="justify-content: center;">Create Purchase Order</a>
-            <a href="/suppliers/new" class="btn btn-outline" style="justify-content: center;">Add Supplier</a>
-            <a href="/inventory/fill-shelves" class="btn btn-outline" style="justify-content: center;">Fill Shelves (Auto-Reorder)</a>
-            <a href="/reports/low-stock" class="btn btn-outline" style="justify-content: center;">View Low Stock Report</a>
-            <a href="/inventory/sync" class="btn btn-outline" style="justify-content: center;">Sync from Shopify</a>
+            <a href="/purchase-orders/new?shop={{ shop.shopify_domain }}" class="btn btn-outline" style="justify-content: center;">Create Purchase Order</a>
+            <a href="/suppliers/new?shop={{ shop.shopify_domain }}" class="btn btn-outline" style="justify-content: center;">Add Supplier</a>
+            <a href="/inventory/fill-shelves?shop={{ shop.shopify_domain }}" class="btn btn-outline" style="justify-content: center;">Fill Shelves (Auto-Reorder)</a>
+            <a href="/reports/low-stock?shop={{ shop.shopify_domain }}" class="btn btn-outline" style="justify-content: center;">View Low Stock Report</a>
+            <a href="/inventory/sync?shop={{ shop.shopify_domain }}" class="btn btn-outline" style="justify-content: center;">Sync from Shopify</a>
         </div>
     </div>
 </div>

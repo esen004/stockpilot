@@ -5,8 +5,8 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h2 style="margin: 0;">Inventory</h2>
         <div style="display: flex; gap: 8px;">
-            <a href="{% url 'fill_shelves_global' %}" class="btn btn-primary">Fill Shelves</a>
-            <a href="{% url 'sync' %}" class="btn btn-outline">Sync from Shopify</a>
+            <a href="{% url 'fill_shelves_global' %}?shop={{ shop.shopify_domain }}" class="btn btn-primary">Fill Shelves</a>
+            <a href="{% url 'sync' %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">Sync from Shopify</a>
         </div>
     </div>
 
@@ -15,10 +15,10 @@
             <input type="text" name="q" value="{{ search }}" placeholder="Search by product name, SKU, or barcode..."
                 style="width: 100%; padding: 8px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;">
         </form>
-        <a href="{% url 'inventory_list' %}" class="btn {% if not stock_filter %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">All</a>
-        <a href="{% url 'inventory_list' %}?stock=low" class="btn {% if stock_filter == 'low' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Low Stock</a>
-        <a href="{% url 'inventory_list' %}?stock=out" class="btn {% if stock_filter == 'out' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Out of Stock</a>
-        <a href="{% url 'inventory_list' %}?stock=dead" class="btn {% if stock_filter == 'dead' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Dead Stock</a>
+        <a href="{% url 'inventory_list' %}?shop={{ shop.shopify_domain }}" class="btn {% if not stock_filter %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">All</a>
+        <a href="{% url 'inventory_list' %}?stock=low&shop={{ shop.shopify_domain }}" class="btn {% if stock_filter == 'low' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Low Stock</a>
+        <a href="{% url 'inventory_list' %}?stock=out&shop={{ shop.shopify_domain }}" class="btn {% if stock_filter == 'out' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Out of Stock</a>
+        <a href="{% url 'inventory_list' %}?stock=dead&shop={{ shop.shopify_domain }}" class="btn {% if stock_filter == 'dead' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px;">Dead Stock</a>
     </div>
 
     <table>

@@ -4,14 +4,14 @@
 <div class="content-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h2 style="margin: 0;">Purchase Orders</h2>
-        <a href="{% url 'po_create' %}" class="btn btn-primary">+ New PO</a>
+        <a href="{% url 'po_create' %}?shop={{ shop.shopify_domain }}" class="btn btn-primary">+ New PO</a>
     </div>
     <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-        <a href="{% url 'po_list' %}" class="btn {% if not status_filter %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">All</a>
-        <a href="{% url 'po_list' %}?status=draft" class="btn {% if status_filter == 'draft' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Draft</a>
-        <a href="{% url 'po_list' %}?status=ordered" class="btn {% if status_filter == 'ordered' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Ordered</a>
-        <a href="{% url 'po_list' %}?status=partial" class="btn {% if status_filter == 'partial' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Partial</a>
-        <a href="{% url 'po_list' %}?status=received" class="btn {% if status_filter == 'received' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Received</a>
+        <a href="{% url 'po_list' %}?shop={{ shop.shopify_domain }}" class="btn {% if not status_filter %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">All</a>
+        <a href="{% url 'po_list' %}?status=draft&shop={{ shop.shopify_domain }}" class="btn {% if status_filter == 'draft' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Draft</a>
+        <a href="{% url 'po_list' %}?status=ordered&shop={{ shop.shopify_domain }}" class="btn {% if status_filter == 'ordered' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Ordered</a>
+        <a href="{% url 'po_list' %}?status=partial&shop={{ shop.shopify_domain }}" class="btn {% if status_filter == 'partial' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Partial</a>
+        <a href="{% url 'po_list' %}?status=received&shop={{ shop.shopify_domain }}" class="btn {% if status_filter == 'received' %}btn-primary{% else %}btn-outline{% endif %}" style="font-size: 13px; padding: 4px 12px;">Received</a>
     </div>
     {% if purchase_orders %}
     <table>
@@ -29,7 +29,7 @@
         <tbody>
         {% for po in purchase_orders %}
             <tr>
-                <td><a href="{% url 'po_detail' po.id %}">PO-{{ po.po_number }}</a></td>
+                <td><a href="{% url 'po_detail' po.id %}?shop={{ shop.shopify_domain }}">PO-{{ po.po_number }}</a></td>
                 <td>{{ po.supplier.name }}</td>
                 <td>{{ po.location.name|default:"-" }}</td>
                 <td><span class="badge badge-{{ po.status }}">{{ po.get_status_display }}</span></td>

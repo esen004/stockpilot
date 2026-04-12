@@ -4,7 +4,7 @@
 <div class="content-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h2 style="margin: 0;">Inventory Counts</h2>
-        <a href="{% url 'stocktake_create' %}" class="btn btn-primary">+ New Count</a>
+        <a href="{% url 'stocktake_create' %}?shop={{ shop.shopify_domain }}" class="btn btn-primary">+ New Count</a>
     </div>
     {% if stocktakes %}
     <table>
@@ -13,8 +13,8 @@
         {% for s in stocktakes %}
         <tr>
             <td>
-                {% if s.status == "in_progress" %}<a href="{% url 'stocktake_count' s.id %}">{{ s.name }}</a>
-                {% else %}<a href="{% url 'stocktake_review' s.id %}">{{ s.name }}</a>{% endif %}
+                {% if s.status == "in_progress" %}<a href="{% url 'stocktake_count' s.id %}?shop={{ shop.shopify_domain }}">{{ s.name }}</a>
+                {% else %}<a href="{% url 'stocktake_review' s.id %}?shop={{ shop.shopify_domain }}">{{ s.name }}</a>{% endif %}
             </td>
             <td>{{ s.location.name }}</td>
             <td><span class="badge badge-{{ s.status }}">{{ s.get_status_display }}</span></td>

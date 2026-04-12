@@ -3,19 +3,19 @@
 {% block content %}
 <h2 style="margin: 0 0 16px;">Reports</h2>
 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
-    <a href="{% url 'forecast' %}" class="content-card" style="text-decoration: none; color: inherit;">
+    <a href="{% url 'forecast' %}?shop={{ shop.shopify_domain }}" class="content-card" style="text-decoration: none; color: inherit;">
         <h3 style="margin: 0 0 8px; font-size: 16px; color: #008060;">Demand Forecast</h3>
         <p style="color: #6d7175; font-size: 14px; margin: 0;">Reorder recommendations based on sales velocity, lead times, and safety stock.</p>
     </a>
-    <a href="{% url 'report_abc' %}" class="content-card" style="text-decoration: none; color: inherit;">
+    <a href="{% url 'report_abc' %}?shop={{ shop.shopify_domain }}" class="content-card" style="text-decoration: none; color: inherit;">
         <h3 style="margin: 0 0 8px; font-size: 16px;">ABC Analysis</h3>
         <p style="color: #6d7175; font-size: 14px; margin: 0;">Classify products by revenue contribution. Focus on your top sellers.</p>
     </a>
-    <a href="{% url 'report_low_stock' %}" class="content-card" style="text-decoration: none; color: inherit;">
+    <a href="{% url 'report_low_stock' %}?shop={{ shop.shopify_domain }}" class="content-card" style="text-decoration: none; color: inherit;">
         <h3 style="margin: 0 0 8px; font-size: 16px; color: #b98900;">Low Stock Report</h3>
         <p style="color: #6d7175; font-size: 14px; margin: 0;">Items with less than 14 days of stock remaining at current sales velocity.</p>
     </a>
-    <a href="{% url 'report_dead_stock' %}" class="content-card" style="text-decoration: none; color: inherit;">
+    <a href="{% url 'report_dead_stock' %}?shop={{ shop.shopify_domain }}" class="content-card" style="text-decoration: none; color: inherit;">
         <h3 style="margin: 0 0 8px; font-size: 16px; color: #d72c0d;">Dead Stock Report</h3>
         <p style="color: #6d7175; font-size: 14px; margin: 0;">Products with zero sales in the last 90 days. Liquidate to free up cash.</p>
     </a>

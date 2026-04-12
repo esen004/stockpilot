@@ -7,7 +7,7 @@
             <h2 style="margin: 0;">Low Stock Report</h2>
             <p style="color: #6d7175; font-size: 14px; margin: 4px 0 0;">Items with less than 14 days of stock at current sales velocity.</p>
         </div>
-        <a href="{% url 'fill_shelves_global' %}" class="btn btn-primary">Fill Shelves</a>
+        <a href="{% url 'fill_shelves_global' %}?shop={{ shop.shopify_domain }}" class="btn btn-primary">Fill Shelves</a>
     </div>
     {% if items %}
     <table>

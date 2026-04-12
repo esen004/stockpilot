@@ -4,7 +4,7 @@
 <div class="content-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h2 style="margin: 0;">Suppliers</h2>
-        <a href="{% url 'supplier_create' %}" class="btn btn-primary">+ Add Supplier</a>
+        <a href="{% url 'supplier_create' %}?shop={{ shop.shopify_domain }}" class="btn btn-primary">+ Add Supplier</a>
     </div>
     {% if suppliers %}
     <table>
@@ -21,7 +21,7 @@
         <tbody>
         {% for s in suppliers %}
             <tr>
-                <td><a href="{% url 'supplier_detail' s.id %}">{{ s.name }}</a></td>
+                <td><a href="{% url 'supplier_detail' s.id %}?shop={{ shop.shopify_domain }}">{{ s.name }}</a></td>
                 <td>{{ s.contact_name }}</td>
                 <td>{{ s.email }}</td>
                 <td>{{ s.lead_time_days }} days</td>

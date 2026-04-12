@@ -5,8 +5,8 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h2 style="margin: 0;">Inventory Transfers</h2>
         <div style="display: flex; gap: 8px;">
-            <a href="{% url 'transfer_suggestions' %}" class="btn btn-outline">View Suggestions</a>
-            <a href="{% url 'transfer_create' %}" class="btn btn-primary">+ New Transfer</a>
+            <a href="{% url 'transfer_suggestions' %}?shop={{ shop.shopify_domain }}" class="btn btn-outline">View Suggestions</a>
+            <a href="{% url 'transfer_create' %}?shop={{ shop.shopify_domain }}" class="btn btn-primary">+ New Transfer</a>
         </div>
     </div>
     {% if transfers %}
