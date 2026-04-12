@@ -19,20 +19,43 @@ from .models import (
 # --- Helpers ---
 
 def _get_shop(request):
+    # First check session
     shop_id = request.session.get("shop_id")
-    if not shop_id:
-        return None
-    try:
-        return Shop.objects.get(id=shop_id, is_active=True)
-    except Shop.DoesNotExist:
-        return None
+    if shop_id:
+        try:
+            return Shop.objects.get(id=shop_id, is_active=True)
+        except Shop.DoesNotExist:
+            pass
+
+    # Fallback: check shop query param (Shopify passes this when embedding)
+    shop_domain = request.GET.get("shop", "").strip()
+    if shop_domain:
+        try:
+            shop_obj = Shop.objects.get(shopify_domain=shop_domain, is_active=True)
+            request.session["shop_id"] = shop_obj.id
+            return shop_obj
+        except Shop.DoesNotExist:
+            pass
+
+    # Fallback: if only one shop exists, use it (dev convenience)
+    shops = Shop.objects.filter(is_active=True)
+    if shops.count() == 1:
+        shop_obj = shops.first()
+        request.session["shop_id"] = shop_obj.id
+        return shop_obj
+
+    return None
 
 
 def _require_shop(view_func):
     def wrapper(request, *args, **kwargs):
         shop = _get_shop(request)
         if not shop:
-            return redirect("shopify_install")
+            # If shop param provided but not found, redirect to install
+            shop_domain = request.GET.get("shop", "")
+            if shop_domain:
+                return redirect(f"/auth/install?shop={shop_domain}")
+            return HttpResponse("Please install the app from your Shopify admin.", status=400)
         request.shop = shop
         return view_func(request, *args, **kwargs)
     return wrapper

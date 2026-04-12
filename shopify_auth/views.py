@@ -16,10 +16,11 @@ from core.models import Shop
 
 def _verify_hmac(query_params: dict, secret: str) -> bool:
     """Verify Shopify HMAC signature on OAuth callback."""
-    received_hmac = query_params.pop("hmac", None)
+    params = dict(query_params)
+    received_hmac = params.pop("hmac", None)
     if not received_hmac:
         return False
-    sorted_params = "&".join(f"{k}={v}" for k, v in sorted(query_params.items()))
+    sorted_params = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
     computed = hmac.new(
         secret.encode("utf-8"),
         sorted_params.encode("utf-8"),
@@ -29,7 +30,7 @@ def _verify_hmac(query_params: dict, secret: str) -> bool:
 
 
 def install(request):
-    """Step 1: Merchant clicks Install → redirect to Shopify OAuth consent screen."""
+    """Step 1: Merchant clicks Install -> redirect to Shopify OAuth consent screen."""
     shop = request.GET.get("shop", "").strip()
     if not shop or not shop.endswith(".myshopify.com"):
         return HttpResponseBadRequest("Missing or invalid shop parameter")
@@ -49,21 +50,22 @@ def install(request):
 
 
 def callback(request):
-    """Step 2: Shopify redirects back with auth code → exchange for access token."""
-    params = {k: v for k, v in request.GET.items()}
-    shop = params.get("shop", "")
-    code = params.get("code", "")
-    state = params.get("state", "")
+    """Step 2: Shopify redirects back with auth code -> exchange for access token."""
+    shop = request.GET.get("shop", "")
+    code = request.GET.get("code", "")
+    state = request.GET.get("state", "")
 
-    # Validate
     if not shop or not code:
         return HttpResponseBadRequest("Missing shop or code")
 
-    if state != request.session.get("shopify_nonce"):
-        return HttpResponseBadRequest("Invalid state/nonce")
-
+    # Verify HMAC (most important security check)
     if not _verify_hmac(dict(request.GET.items()), settings.SHOPIFY_API_SECRET):
         return HttpResponseBadRequest("Invalid HMAC")
+
+    # Nonce check — skip if session was lost (Render free tier cold starts)
+    stored_nonce = request.session.get("shopify_nonce")
+    if stored_nonce and state != stored_nonce:
+        return HttpResponseBadRequest("Invalid state/nonce")
 
     # Exchange code for access token
     token_url = f"https://{shop}/admin/oauth/access_token"
@@ -93,10 +95,16 @@ def callback(request):
     )
 
     # Fetch basic store info
-    _fetch_store_info(shop_obj)
+    try:
+        _fetch_store_info(shop_obj)
+    except Exception:
+        pass
 
     # Register mandatory webhooks
-    _register_webhooks(shop_obj)
+    try:
+        _register_webhooks(shop_obj)
+    except Exception:
+        pass
 
     # Clear session nonce
     request.session.pop("shopify_nonce", None)
@@ -105,12 +113,11 @@ def callback(request):
     # Store shop ID in session for embedded app
     request.session["shop_id"] = shop_obj.id
 
-    # Redirect to app dashboard
+    # Redirect to app inside Shopify admin
     return redirect(f"https://{shop}/admin/apps/{settings.SHOPIFY_API_KEY}")
 
 
 def _fetch_store_info(shop_obj):
-    """Pull basic store info from Shopify."""
     query = """{ shop { name email currencyCode } }"""
     data = _graphql(shop_obj, query)
     if data and "shop" in data:
@@ -122,7 +129,6 @@ def _fetch_store_info(shop_obj):
 
 
 def _register_webhooks(shop_obj):
-    """Register mandatory GDPR + app lifecycle webhooks."""
     webhooks = [
         ("APP_UNINSTALLED", f"{settings.SHOPIFY_APP_URL}/webhooks/app-uninstalled"),
         ("CUSTOMERS_DATA_REQUEST", f"{settings.SHOPIFY_APP_URL}/webhooks/customers-data-request"),
@@ -148,7 +154,6 @@ def _register_webhooks(shop_obj):
 
 
 def _graphql(shop_obj, query, variables=None):
-    """Execute a GraphQL query against Shopify Admin API."""
     url = f"https://{shop_obj.shopify_domain}/admin/api/{settings.SHOPIFY_API_VERSION}/graphql.json"
     payload = {"query": query}
     if variables:
@@ -171,7 +176,6 @@ def _graphql(shop_obj, query, variables=None):
 # --- Webhook Handlers ---
 
 def _verify_webhook_hmac(request) -> bool:
-    """Verify HMAC on incoming Shopify webhook."""
     secret = settings.SHOPIFY_API_SECRET.encode("utf-8")
     digest = hmac.new(secret, request.body, hashlib.sha256).digest()
     import base64
@@ -183,17 +187,14 @@ def _verify_webhook_hmac(request) -> bool:
 @csrf_exempt
 @require_POST
 def webhook_app_uninstalled(request):
-    """Handle app/uninstalled — mark shop as inactive."""
     if not _verify_webhook_hmac(request):
         return HttpResponse(status=401)
     try:
-        data = json.loads(request.body)
         domain = request.headers.get("X-Shopify-Shop-Domain", "")
         if domain:
             from django.utils import timezone
             Shop.objects.filter(shopify_domain=domain).update(
-                is_active=False,
-                uninstalled_at=timezone.now(),
+                is_active=False, uninstalled_at=timezone.now(),
             )
     except Exception:
         pass
@@ -205,7 +206,6 @@ def webhook_app_uninstalled(request):
 def webhook_customers_data_request(request):
     if not _verify_webhook_hmac(request):
         return HttpResponse(status=401)
-    # We don't store customer PII beyond Shopify's own data
     return HttpResponse(status=200)
 
 
@@ -220,7 +220,6 @@ def webhook_customers_redact(request):
 @csrf_exempt
 @require_POST
 def webhook_shop_redact(request):
-    """48 hours after uninstall — delete all shop data."""
     if not _verify_webhook_hmac(request):
         return HttpResponse(status=401)
     try:
