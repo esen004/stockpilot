@@ -1316,10 +1316,14 @@ def billing_select(request):
     if request.method == "POST":
         plan_key = request.POST.get("plan", "starter")
         from .billing import create_subscription
-        confirmation_url = create_subscription(request.shop, plan_key)
-        if confirmation_url:
-            return redirect(confirmation_url)
-        return redirect("dashboard")
+        import traceback
+        try:
+            confirmation_url = create_subscription(request.shop, plan_key)
+            if confirmation_url:
+                return redirect(confirmation_url)
+        except Exception as e:
+            return HttpResponse(f"<h2>Billing Error</h2><pre>{e}\n\n{traceback.format_exc()}</pre>")
+        return redirect(f"/?shop={request.shop.shopify_domain}")
 
     return render(request, "core/billing_select.html", {
         "shop": request.shop,
