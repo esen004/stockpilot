@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Plan Limit Reached{% endblock %}
+{% block content %}
+<div class="content-card" style="max-width: 500px; margin: 40px auto; text-align: center;">
+    <div style="font-size: 48px; margin-bottom: 16px;">&#9888;</div>
+    <h2 style="margin: 0 0 8px;">Plan Limit Reached</h2>
+    <p style="color: #6d7175; font-size: 14px;">
+        Your <strong>{{ plan_name }}</strong> plan allows {{ limit }} {{ limit_type }}.
+        You currently have {{ current }}.
+    </p>
+    <p style="color: #6d7175; font-size: 14px; margin-top: 16px;">
+        Upgrade your plan to add more.
+    </p>
+    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 24px;">
+        <a href="{% url 'billing_select' %}" class="btn btn-primary">Upgrade Plan</a>
+        <a href="javascript:history.back()" class="btn btn-outline">Go Back</a>
+    </div>
+</div>
+{% endblock %}

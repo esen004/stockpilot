@@ -125,6 +125,22 @@ def debug_view(request):
     return HttpResponse(html)
 
 
+# --- Plan Limits ---
+
+def _get_plan_limits(shop):
+    plan = settings.STOCKPILOT_PLANS.get(shop.plan, settings.STOCKPILOT_PLANS["starter"])
+    return plan
+
+
+def _check_limit(shop, limit_key, current_count):
+    """Returns True if under limit, False if at/over limit."""
+    plan = _get_plan_limits(shop)
+    limit = plan.get(limit_key)
+    if limit is None:  # unlimited
+        return True
+    return current_count < limit
+
+
 # --- Dashboard ---
 
 @_require_shop
@@ -197,6 +213,16 @@ def supplier_list(request):
 
 @_require_shop
 def supplier_create(request):
+    current_count = Supplier.objects.filter(shop=request.shop).count()
+    if not _check_limit(request.shop, "supplier_limit", current_count):
+        plan = _get_plan_limits(request.shop)
+        return render(request, "core/plan_limit.html", {
+            "shop": request.shop,
+            "limit_type": "suppliers",
+            "current": current_count,
+            "limit": plan["supplier_limit"],
+            "plan_name": plan["name"],
+        })
     if request.method == "POST":
         supplier = Supplier(shop=request.shop)
         _save_supplier_from_post(supplier, request.POST)
@@ -282,6 +308,20 @@ def po_list(request):
 
 @_require_shop
 def po_create(request):
+    # Check PO limit (count POs created this month)
+    from datetime import datetime
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    monthly_pos = PurchaseOrder.objects.filter(shop=request.shop, created_at__gte=month_start).count()
+    if not _check_limit(request.shop, "po_limit", monthly_pos):
+        plan = _get_plan_limits(request.shop)
+        return render(request, "core/plan_limit.html", {
+            "shop": request.shop,
+            "limit_type": "purchase orders this month",
+            "current": monthly_pos,
+            "limit": plan["po_limit"],
+            "plan_name": plan["name"],
+        })
+
     if request.method == "POST":
         po = _create_po_from_post(request.shop, request.POST)
         return redirect("po_detail", po_id=po.id)
@@ -1050,7 +1090,15 @@ View your dashboard: {settings.SHOPIFY_APP_URL}/?shop={shop.shopify_domain}
 
 @_require_shop
 def forecast_view(request):
-    """Demand forecast with reorder recommendations."""
+    """Demand forecast with reorder recommendations. Pro plan only."""
+    if request.shop.plan not in ("pro",):
+        return render(request, "core/plan_limit.html", {
+            "shop": request.shop,
+            "limit_type": "Demand Forecasting (Pro plan feature)",
+            "current": 0,
+            "limit": 0,
+            "plan_name": _get_plan_limits(request.shop)["name"],
+        })
     variants = Variant.objects.filter(shop=request.shop).select_related(
         "product", "supplier"
     ).prefetch_related("sales_velocity", "inventory_levels")
