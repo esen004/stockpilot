@@ -61,6 +61,36 @@ def _require_shop(view_func):
     return wrapper
 
 
+# --- Debug ---
+
+def debug_view(request):
+    """No auth needed — shows DB state and env status."""
+    import os
+    shops = Shop.objects.all()
+    db_engine = settings.DATABASES["default"]["ENGINE"]
+    has_db_url = bool(os.environ.get("DATABASE_URL"))
+
+    html = "<h2>StockPilot Debug</h2>"
+    html += f"<p><b>DB Engine:</b> {db_engine}</p>"
+    html += f"<p><b>DATABASE_URL set:</b> {has_db_url}</p>"
+    html += f"<p><b>SHOPIFY_API_KEY:</b> {settings.SHOPIFY_API_KEY[:8]}...</p>"
+    html += f"<p><b>SHOPIFY_APP_URL:</b> {settings.SHOPIFY_APP_URL}</p>"
+    html += f"<p><b>Session shop_id:</b> {request.session.get('shop_id', 'None')}</p>"
+    html += f"<p><b>GET params:</b> {dict(request.GET)}</p>"
+    html += f"<p><b>Shops in DB ({shops.count()}):</b></p>"
+    for s in shops:
+        html += f"<li>{s.shopify_domain} — active={s.is_active} — token={s.access_token[:8]}...</li>"
+    if not shops:
+        html += "<p style='color:red'>NO SHOPS IN DATABASE — need to install the app</p>"
+        html += f"<p><a href='/auth/install?shop=stockpdev.myshopify.com'>Install App</a></p>"
+        html += f"<p><a href='/auth/setup'>Manual Setup</a></p>"
+    else:
+        s = shops.first()
+        html += f"<br><p><a href='/?shop={s.shopify_domain}'>Go to Dashboard</a></p>"
+        html += f"<p><a href='/sync?shop={s.shopify_domain}'>Sync Products</a></p>"
+    return HttpResponse(html)
+
+
 # --- Dashboard ---
 
 @_require_shop

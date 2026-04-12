@@ -2,6 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Debug
+    path("debug", views.debug_view, name="debug"),
+
     # Dashboard
     path("", views.dashboard, name="dashboard"),
     path("sync", views.sync_from_shopify, name="sync"),
