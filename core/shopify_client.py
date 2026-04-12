@@ -62,9 +62,14 @@ class ShopifyClient:
             )
 
     def sync_products(self):
-        """Sync all products and variants from Shopify."""
+        """Sync products and variants from Shopify, respecting SKU limits."""
+        from django.conf import settings as django_settings
+        plan = django_settings.STOCKPILOT_PLANS.get(self.shop.plan, django_settings.STOCKPILOT_PLANS["starter"])
+        sku_limit = plan.get("sku_limit")  # None = unlimited
+
         cursor = None
         has_next = True
+        variant_count = 0
 
         while has_next:
             gql = """
@@ -130,6 +135,10 @@ class ShopifyClient:
                 )
 
                 for v_edge in node.get("variants", {}).get("edges", []):
+                    if sku_limit and variant_count >= sku_limit:
+                        has_next = False
+                        break
+
                     v = v_edge["node"]
                     variant_id = v["id"].split("/")[-1]
                     inv_item = v.get("inventoryItem", {})
@@ -151,6 +160,7 @@ class ShopifyClient:
                             "cost": cost,
                         },
                     )
+                    variant_count += 1
 
             has_next = page_info.get("hasNextPage", False)
             cursor = page_info.get("endCursor")

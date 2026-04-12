@@ -397,7 +397,14 @@ def po_add_items(request, po_id):
 
 @_require_shop
 def po_fill_shelves(request, po_id):
-    """Auto-calculate reorder quantities based on sales velocity."""
+    """Auto-calculate reorder quantities based on sales velocity. Growth+ only."""
+    if request.shop.plan not in ("growth", "pro"):
+        return render(request, "core/plan_limit.html", {
+            "shop": request.shop,
+            "limit_type": "Fill Shelves (Growth plan feature)",
+            "current": 0, "limit": 0,
+            "plan_name": _get_plan_limits(request.shop)["name"],
+        })
     po = get_object_or_404(PurchaseOrder, id=po_id, shop=request.shop)
     days_to_cover = int(request.GET.get("days", 30))
 
@@ -657,7 +664,14 @@ def inventory_list(request):
 
 @_require_shop
 def fill_shelves_global(request):
-    """Global fill-shelves — auto-reorder calculation across all suppliers."""
+    """Global fill-shelves — Growth+ only."""
+    if request.shop.plan not in ("growth", "pro"):
+        return render(request, "core/plan_limit.html", {
+            "shop": request.shop,
+            "limit_type": "Fill Shelves (Growth plan feature)",
+            "current": 0, "limit": 0,
+            "plan_name": _get_plan_limits(request.shop)["name"],
+        })
     days_to_cover = int(request.GET.get("days", 30))
     suggestions = []
 
@@ -1031,12 +1045,12 @@ def transfer_create(request):
 # =============================================================
 
 def weekly_report(request):
-    """Cron endpoint — send weekly inventory digest to all active shops."""
+    """Cron endpoint — send weekly inventory digest to Pro shops only."""
     from django.core.mail import send_mail
     import traceback
 
     results = []
-    for shop in Shop.objects.filter(is_active=True):
+    for shop in Shop.objects.filter(is_active=True, plan="pro"):
         try:
             low_stock = SalesVelocity.objects.filter(
                 variant__shop=shop, days_of_stock__isnull=False, days_of_stock__lte=14,
