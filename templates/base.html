@@ -5,12 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockPilot — {% block title %}Dashboard{% endblock %}</title>
 
-    <!-- Shopify App Bridge -->
+    <!-- Shopify App Bridge (CDN v4+) -->
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
     <script>
-        if (window.shopify) {
-            // App Bridge is loaded — app is embedded in Shopify admin
-            console.log("App Bridge loaded");
+        // Initialize App Bridge and use session tokens for authentication
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (window.shopify && window.shopify.idToken) {
+                try {
+                    const token = await shopify.idToken();
+                    // Store token for authenticated fetch calls
+                    window.__shopifySessionToken = token;
+                    console.log("App Bridge session token acquired");
+                } catch(e) {
+                    console.log("App Bridge: not in embedded context");
+                }
+            }
+        });
+
+        // Helper: authenticated fetch using session tokens instead of cookies
+        async function shopifyFetch(url, options = {}) {
+            if (window.shopify && window.shopify.idToken) {
+                const token = await shopify.idToken();
+                return fetch(url, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Authorization': 'Bearer ' + token,
+                    },
+                });
+            }
+            return fetch(url, options);
         }
     </script>
 
