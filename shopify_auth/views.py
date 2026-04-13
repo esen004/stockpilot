@@ -286,3 +286,25 @@ def webhook_shop_redact(request):
     except Exception:
         pass
     return HttpResponse(status=200)
+
+
+@csrf_exempt
+@require_POST
+def webhook_tebex(request):
+    """Handle Tebex webhooks — validation + payment events."""
+    try:
+        data = json.loads(request.body)
+        webhook_type = data.get("type", "")
+
+        # Validation request — return the ID back
+        if webhook_type == "validation.webhook":
+            return JsonResponse({"id": data.get("id", "")})
+
+        # Payment completed — log it
+        if webhook_type == "payment.completed":
+            # Could store payment info, send notification, etc.
+            pass
+
+        return HttpResponse(status=200)
+    except Exception:
+        return HttpResponse(status=200)
