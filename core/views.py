@@ -19,7 +19,17 @@ from .models import (
 # --- Helpers ---
 
 def _get_shop(request):
-    # First check session
+    # Priority 1: Shopify session token (JWT from App Bridge)
+    shop_domain = getattr(request, "shopify_shop_domain", None)
+    if shop_domain:
+        try:
+            shop_obj = Shop.objects.get(shopify_domain=shop_domain, is_active=True)
+            request.session["shop_id"] = shop_obj.id
+            return shop_obj
+        except Shop.DoesNotExist:
+            pass
+
+    # Priority 2: Django session (for backwards compat)
     shop_id = request.session.get("shop_id")
     if shop_id:
         try:
@@ -27,7 +37,7 @@ def _get_shop(request):
         except Shop.DoesNotExist:
             pass
 
-    # Fallback: check shop query param (Shopify passes this when embedding)
+    # Priority 3: shop query param (Shopify passes this when embedding)
     shop_domain = request.GET.get("shop", "").strip()
     if shop_domain:
         try:
