@@ -2,6 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Shopify session token bounce page (REQUIRED for embedded auth)
+    path("session-token-bounce", views.session_token_bounce, name="session_token_bounce"),
+
     # Debug + Legal
     path("debug", views.debug_view, name="debug"),
     path("privacy", views.privacy_policy, name="privacy"),

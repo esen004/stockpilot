@@ -59,9 +59,33 @@ def _get_shop(request):
 
 def _require_shop(view_func):
     def wrapper(request, *args, **kwargs):
+        # BOUNCE PAGE PATTERN — Shopify embedded auth requirement
+        # If request has no Authorization header AND no id_token URL param,
+        # this is a "document request" — redirect to bounce page that initializes
+        # App Bridge and re-requests with session token.
+        # This is what makes Shopify's automated checker detect session token usage.
+        has_auth_header = request.headers.get("Authorization", "").startswith("Bearer ")
+        has_id_token = bool(request.GET.get("id_token", ""))
+        is_document_request = (
+            request.method == "GET"
+            and not has_auth_header
+            and not has_id_token
+            and not request.session.get("shop_id")  # already authed via session
+            and request.GET.get("shop", "")  # only when embedded with shop param
+            and not request.path.startswith("/auth/")
+            and not request.path.startswith("/webhooks/")
+            and not request.path.startswith("/session-token-bounce")
+        )
+
+        if is_document_request:
+            from urllib.parse import urlencode
+            params = dict(request.GET.items())
+            shopify_reload = f"{request.path}?{urlencode(params)}" if params else request.path
+            params["shopify-reload"] = shopify_reload
+            return redirect(f"/session-token-bounce?{urlencode(params)}")
+
         shop = _get_shop(request)
         if not shop:
-            # If shop param provided but not found, redirect to install
             shop_domain = request.GET.get("shop", "")
             if shop_domain:
                 return redirect(f"/auth/install?shop={shop_domain}")
@@ -69,6 +93,50 @@ def _require_shop(view_func):
         request.shop = shop
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+def session_token_bounce(request):
+    """
+    Bounce page that initializes App Bridge, gets a session token,
+    then redirects back to the original page WITH the token.
+    This is REQUIRED for Shopify's embedded app checks to pass.
+    """
+    from django.conf import settings
+    api_key = settings.SHOPIFY_API_KEY
+    return HttpResponse(f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="shopify-api-key" content="{api_key}" />
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+    <title>Loading…</title>
+</head>
+<body>
+<script>
+(async function() {{
+    if (!window.shopify) {{
+        // App Bridge didn't load — fallback navigation
+        const params = new URLSearchParams(window.location.search);
+        const reload = params.get('shopify-reload');
+        if (reload) window.location.replace(reload);
+        return;
+    }}
+    try {{
+        const token = await shopify.idToken();
+        const params = new URLSearchParams(window.location.search);
+        const reload = params.get('shopify-reload') || '/';
+        params.delete('shopify-reload');
+        params.set('id_token', token);
+        // Strip leading slash conflict
+        const base = reload.split('?')[0];
+        window.location.replace(base + '?' + params.toString());
+    }} catch (e) {{
+        console.error('Bounce failed:', e);
+    }}
+}})();
+</script>
+</body>
+</html>""", content_type="text/html")
 
 
 # --- Legal ---

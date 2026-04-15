@@ -37,19 +37,28 @@ class ShopifyEmbedMiddleware:
         return response
 
     def _decode_session_token(self, request):
-        """Decode and verify Shopify session token (JWT) from Authorization header."""
+        """Decode and verify Shopify session token (JWT).
+        Checks Authorization Bearer header FIRST, then id_token URL param (from bounce page).
+        """
         request.shopify_shop_domain = None
         request.shopify_session_token = None
 
+        # Try Authorization header
+        token = None
         auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+
+        # Fallback to id_token URL param (Shopify embedded admin appends this)
+        if not token:
+            token = request.GET.get("id_token", "")
+
+        if not token:
             return
 
-        token = auth_header[7:]
         try:
             payload = self._verify_shopify_jwt(token)
             if payload:
-                # Extract shop domain from "iss" (e.g. "https://store.myshopify.com/admin")
                 iss = payload.get("iss", "")
                 shop_domain = iss.replace("https://", "").replace("/admin", "")
                 request.shopify_shop_domain = shop_domain
