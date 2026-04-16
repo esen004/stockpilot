@@ -87,6 +87,9 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- Session stored in cookies (no DB call per request) ---
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+
 # --- Cache (in-memory, avoids slow Neon DB round-trips) ---
 CACHES = {
     "default": {
