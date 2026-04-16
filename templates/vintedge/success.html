@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VintEdge PRO - Payment Successful</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: #0f0f1e;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #2d2d4a;
+      border-radius: 16px;
+      padding: 48px 40px;
+      max-width: 520px;
+      width: 90%;
+      text-align: center;
+    }
+    .checkmark {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #007782, #009688);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+      color: #fff;
+    }
+    h1 {
+      font-size: 28px;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #9e9ebc;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+    .steps {
+      text-align: left;
+      background: #0f0f1e;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .steps h3 {
+      color: #007782;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    .step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+    .step:last-child { margin-bottom: 0; }
+    .step-num {
+      min-width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #007782, #009688);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: #fff;
+    }
+    .step-text {
+      font-size: 14px;
+      line-height: 1.5;
+      padding-top: 3px;
+    }
+    .email-highlight {
+      background: #2d2d4a;
+      border: 1px solid #3d3d5c;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-family: monospace;
+      font-size: 15px;
+      color: #4caf50;
+      word-break: break-all;
+    }
+    .footer-note {
+      font-size: 12px;
+      color: #6e6e8e;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="checkmark">&#10003;</div>
+    <h1>Payment Successful!</h1>
+    <p class="subtitle">Your VintEdge PRO subscription is now active.</p>
+
+    <div class="steps">
+      <h3>Activate PRO in your extension:</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Open the VintEdge extension in Chrome</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">Go to <strong>Settings</strong> (gear icon)</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">In the <strong>VintEdge PRO</strong> section, enter the email you used to purchase</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">Click <strong>Verify &amp; Activate</strong> to unlock all PRO features</div>
+      </div>
+    </div>
+
+    {% if email %}
+    <div class="email-highlight">{{ email }}</div>
+    <p class="footer-note">Use this email in the extension to activate PRO.</p>
+    {% endif %}
+
+    <p class="footer-note" style="margin-top: 24px;">
+      Questions? Contact support at support@vintedge.pro
+    </p>
+  </div>
+</body>
+</html>

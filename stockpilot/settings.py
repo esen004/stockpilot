@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "shopify_auth",
     "core",
+    "vintedge_api",
 ]
 
 # --- Middleware ---
