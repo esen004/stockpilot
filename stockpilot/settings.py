@@ -152,8 +152,13 @@ STOCKPILOT_PLANS = {
 # Content Security Policy for Shopify embedded app
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# CSRF trusted origins — needed for Shopify embedded iframe + Render domain
+# CSRF settings for Shopify embedded iframe
 CSRF_TRUSTED_ORIGINS = [
     "https://stockpilot-v63z.onrender.com",
     "https://admin.shopify.com",
+    "https://*.myshopify.com",
 ]
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = True
