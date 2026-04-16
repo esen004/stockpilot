@@ -87,6 +87,15 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- Cache (in-memory, avoids slow Neon DB round-trips) ---
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "stockpilot-cache",
+        "TIMEOUT": 300,  # 5 min default
+    }
+}
+
 # --- Redis / RQ (for async webhook processing) ---
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 RQ_QUEUES = {

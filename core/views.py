@@ -19,33 +19,51 @@ from .models import (
 # --- Helpers ---
 
 def _get_shop(request):
+    from django.core.cache import cache
+
     # Priority 1: Shopify session token (JWT from App Bridge)
     shop_domain = getattr(request, "shopify_shop_domain", None)
     if shop_domain:
-        try:
-            shop_obj = Shop.objects.get(shopify_domain=shop_domain, is_active=True)
+        cache_key = f"shop:{shop_domain}"
+        shop_obj = cache.get(cache_key)
+        if not shop_obj:
+            try:
+                shop_obj = Shop.objects.get(shopify_domain=shop_domain, is_active=True)
+                cache.set(cache_key, shop_obj, 300)
+            except Shop.DoesNotExist:
+                shop_obj = None
+        if shop_obj:
             request.session["shop_id"] = shop_obj.id
             return shop_obj
-        except Shop.DoesNotExist:
-            pass
 
-    # Priority 2: Django session (for backwards compat)
+    # Priority 2: Django session
     shop_id = request.session.get("shop_id")
     if shop_id:
-        try:
-            return Shop.objects.get(id=shop_id, is_active=True)
-        except Shop.DoesNotExist:
-            pass
+        cache_key = f"shop_id:{shop_id}"
+        shop_obj = cache.get(cache_key)
+        if not shop_obj:
+            try:
+                shop_obj = Shop.objects.get(id=shop_id, is_active=True)
+                cache.set(cache_key, shop_obj, 300)
+            except Shop.DoesNotExist:
+                shop_obj = None
+        if shop_obj:
+            return shop_obj
 
-    # Priority 3: shop query param (Shopify passes this when embedding)
+    # Priority 3: shop query param
     shop_domain = request.GET.get("shop", "").strip()
     if shop_domain:
-        try:
-            shop_obj = Shop.objects.get(shopify_domain=shop_domain, is_active=True)
+        cache_key = f"shop:{shop_domain}"
+        shop_obj = cache.get(cache_key)
+        if not shop_obj:
+            try:
+                shop_obj = Shop.objects.get(shopify_domain=shop_domain, is_active=True)
+                cache.set(cache_key, shop_obj, 300)
+            except Shop.DoesNotExist:
+                shop_obj = None
+        if shop_obj:
             request.session["shop_id"] = shop_obj.id
             return shop_obj
-        except Shop.DoesNotExist:
-            pass
 
     # Fallback: if only one shop exists, use it (dev convenience)
     shops = Shop.objects.filter(is_active=True)
@@ -236,29 +254,28 @@ def dashboard(request):
             "recent_pos": [],
             "active_tab": "dashboard",
         })
-    total_variants = Variant.objects.filter(shop=shop).count()
-    total_suppliers = shop.suppliers.count()
-    open_pos = PurchaseOrder.objects.filter(
-        shop=shop, status__in=["draft", "ordered", "partial"]
-    ).count()
-    low_stock_count = SalesVelocity.objects.filter(
-        variant__shop=shop, days_of_stock__isnull=False, days_of_stock__lte=14,
-    ).count()
-    dead_stock_count = SalesVelocity.objects.filter(
-        variant__shop=shop, is_dead_stock=True,
-    ).count()
-    recent_pos = PurchaseOrder.objects.filter(shop=shop).select_related("supplier")[:5]
-
-    return render(request, "core/dashboard.html", {
-        "shop": shop,
-        "total_variants": total_variants,
-        "total_suppliers": total_suppliers,
-        "open_pos": open_pos,
-        "low_stock_count": low_stock_count,
-        "dead_stock_count": dead_stock_count,
-        "recent_pos": recent_pos,
-        "active_tab": "dashboard",
-    })
+    from django.core.cache import cache
+    cache_key = f"dashboard:{shop.id}"
+    ctx = cache.get(cache_key)
+    if not ctx:
+        ctx = {
+            "total_variants": Variant.objects.filter(shop=shop).count(),
+            "total_suppliers": shop.suppliers.count(),
+            "open_pos": PurchaseOrder.objects.filter(
+                shop=shop, status__in=["draft", "ordered", "partial"]
+            ).count(),
+            "low_stock_count": SalesVelocity.objects.filter(
+                variant__shop=shop, days_of_stock__isnull=False, days_of_stock__lte=14,
+            ).count(),
+            "dead_stock_count": SalesVelocity.objects.filter(
+                variant__shop=shop, is_dead_stock=True,
+            ).count(),
+            "recent_pos": list(PurchaseOrder.objects.filter(shop=shop).select_related("supplier")[:5]),
+        }
+        cache.set(cache_key, ctx, 60)  # 1 min cache
+    ctx["shop"] = shop
+    ctx["active_tab"] = "dashboard"
+    return render(request, "core/dashboard.html", ctx)
 
 
 # --- Sync ---
