@@ -10,7 +10,7 @@ scopes = "read_products,read_inventory,write_inventory,read_orders,read_location
 redirect_urls = ["https://stockpilot-v63z.onrender.com/auth/callback"]
 
 [webhooks]
-api_version = "2025-04"
+api_version = "2026-04"
 
 [webhooks.privacy_compliance]
 customer_data_request_url = "https://stockpilot-v63z.onrender.com/webhooks/customers-data-request"

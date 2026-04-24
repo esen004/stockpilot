@@ -119,7 +119,7 @@ SHOPIFY_API_SCOPES = [
     "read_orders",
     "read_locations",
 ]
-SHOPIFY_API_VERSION = "2025-04"
+SHOPIFY_API_VERSION = "2026-04"
 SHOPIFY_APP_URL = os.environ.get("SHOPIFY_APP_URL", "https://localhost:8000")
 
 # --- Billing Plans ---
