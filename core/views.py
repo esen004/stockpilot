@@ -65,13 +65,6 @@ def _get_shop(request):
             request.session["shop_id"] = shop_obj.id
             return shop_obj
 
-    # Fallback: if only one shop exists, use it (dev convenience)
-    shops = Shop.objects.filter(is_active=True)
-    if shops.count() == 1:
-        shop_obj = shops.first()
-        request.session["shop_id"] = shop_obj.id
-        return shop_obj
-
     return None
 
 
@@ -282,24 +275,25 @@ def dashboard(request):
 
 def sync_from_shopify(request):
     """Sync — no decorator, handle shop manually to avoid 500 on redirect."""
-    import traceback
-    try:
-        shop = _get_shop(request)
-        if not shop:
-            return HttpResponse("No shop found. Install the app first.", status=400)
+    import requests as _requests
+    shop = _get_shop(request)
+    if not shop:
+        shop_domain = request.GET.get("shop", "").strip()
+        if shop_domain:
+            return redirect(f"/auth/install?shop={shop_domain}")
+        return HttpResponse("No shop found. Install the app first.", status=400)
 
+    try:
         from .shopify_client import ShopifyClient
-        client = ShopifyClient(shop)
-        client.sync_all()
-        return HttpResponse(
-            f"<h2>Sync complete!</h2>"
-            f"<p>Store: {shop.shopify_domain}</p>"
-            f"<p>Products synced at: {shop.last_product_sync}</p>"
-            f"<p><a href='/?shop={shop.shopify_domain}'>Go to Dashboard</a></p>"
-        )
-    except Exception as e:
-        tb = traceback.format_exc()
-        return HttpResponse(f"<h2>Sync Error</h2><pre>{e}\n\n{tb}</pre>")
+        ShopifyClient(shop).sync_all()
+    except _requests.HTTPError as e:
+        # Stale/revoked token — force re-auth
+        if e.response is not None and e.response.status_code in (401, 403):
+            shop.is_active = False
+            shop.save(update_fields=["is_active"])
+            return redirect(f"/auth/install?shop={shop.shopify_domain}")
+        raise
+    return redirect(f"/?shop={shop.shopify_domain}")
 
 
 # =============================================================

@@ -25,6 +25,9 @@ class ShopifyClient:
         if variables:
             payload["variables"] = variables
         resp = requests.post(self.base_url, json=payload, headers=self.headers, timeout=30)
+        if resp.status_code in (401, 403):
+            self.shop.is_active = False
+            self.shop.save(update_fields=["is_active"])
         resp.raise_for_status()
         data = resp.json()
         if "errors" in data:
