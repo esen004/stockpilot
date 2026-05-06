@@ -1,0 +1,1 @@
+C:\Python314\python.exe: can't open file 'C:\\Users\\legio\\OneDrive\\Desktop\\Bonfire\\stockpilot\\_tmp_scan_all.py': [Errno 2] No such file or directory

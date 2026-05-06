@@ -184,34 +184,9 @@ def privacy_policy(request):
     """)
 
 
-# --- Debug ---
-
 def debug_view(request):
-    """No auth needed — shows DB state and env status."""
-    import os
-    shops = Shop.objects.all()
-    db_engine = settings.DATABASES["default"]["ENGINE"]
-    has_db_url = bool(os.environ.get("DATABASE_URL"))
-
-    html = "<h2>StockPilot Debug</h2>"
-    html += f"<p><b>DB Engine:</b> {db_engine}</p>"
-    html += f"<p><b>DATABASE_URL set:</b> {has_db_url}</p>"
-    html += f"<p><b>SHOPIFY_API_KEY:</b> {settings.SHOPIFY_API_KEY[:8]}...</p>"
-    html += f"<p><b>SHOPIFY_APP_URL:</b> {settings.SHOPIFY_APP_URL}</p>"
-    html += f"<p><b>Session shop_id:</b> {request.session.get('shop_id', 'None')}</p>"
-    html += f"<p><b>GET params:</b> {dict(request.GET)}</p>"
-    html += f"<p><b>Shops in DB ({shops.count()}):</b></p>"
-    for s in shops:
-        html += f"<li>{s.shopify_domain} — active={s.is_active} — token={s.access_token}</li>"
-    if not shops:
-        html += "<p style='color:red'>NO SHOPS IN DATABASE — need to install the app</p>"
-        html += f"<p><a href='/auth/install?shop=stockpdev.myshopify.com'>Install App</a></p>"
-        html += f"<p><a href='/auth/setup'>Manual Setup</a></p>"
-    else:
-        s = shops.first()
-        html += f"<br><p><a href='/?shop={s.shopify_domain}'>Go to Dashboard</a></p>"
-        html += f"<p><a href='/sync?shop={s.shopify_domain}'>Sync Products</a></p>"
-    return HttpResponse(html)
+    """Removed for App Store review — exposed access tokens and config."""
+    return HttpResponse(status=404)
 
 
 # --- Plan Limits ---
@@ -1479,13 +1454,17 @@ def billing_select(request):
     if request.method == "POST":
         plan_key = request.POST.get("plan", "starter")
         from .billing import create_subscription
-        import traceback
         try:
             confirmation_url = create_subscription(request.shop, plan_key)
             if confirmation_url:
                 return redirect(confirmation_url)
-        except Exception as e:
-            return HttpResponse(f"<h2>Billing Error</h2><pre>{e}\n\n{traceback.format_exc()}</pre>")
+        except Exception:
+            return render(request, "core/billing_select.html", {
+                "shop": request.shop,
+                "plans": settings.STOCKPILOT_PLANS,
+                "current_plan": request.shop.plan,
+                "error": "We couldn't start your subscription. Please try again or contact support.",
+            })
         return redirect(f"/?shop={request.shop.shopify_domain}")
 
     return render(request, "core/billing_select.html", {
