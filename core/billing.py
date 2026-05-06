@@ -16,13 +16,18 @@ def create_subscription(shop: Shop, plan_key: str) -> str:
 
     client = ShopifyClient(shop)
 
+    # test: false in production — Shopify automatically forces test mode on
+    # development stores regardless of this flag, so real merchants get billed
+    # while dev/review stores stay free. Setting test: true here would skip real
+    # charges in production and silently break revenue.
     gql = """
     mutation appSubscriptionCreate(
         $name: String!,
         $returnUrl: URL!,
         $trialDays: Int!,
         $amount: Decimal!,
-        $currencyCode: CurrencyCode!
+        $currencyCode: CurrencyCode!,
+        $test: Boolean!
     ) {
         appSubscriptionCreate(
             name: $name,
@@ -36,7 +41,7 @@ def create_subscription(shop: Shop, plan_key: str) -> str:
                     }
                 }
             }]
-            test: true
+            test: $test
         ) {
             appSubscription {
                 id
@@ -57,6 +62,7 @@ def create_subscription(shop: Shop, plan_key: str) -> str:
         "trialDays": plan["trial_days"],
         "amount": str(plan["price"]),
         "currencyCode": "USD",
+        "test": bool(settings.DEBUG),
     }
 
     data = client.query(gql, variables)

@@ -163,34 +163,41 @@
     </div>
 
     <script>
-        // ACTIVELY use App Bridge — Shopify checker needs to see real API usage, not just CDN loaded
+        // App Bridge session-token authentication.
+        // Compliant with App Store requirement 1.1.1 — no cookies / localStorage.
+        // We attach a fresh idToken() to every same-origin fetch as
+        // "Authorization: Bearer <jwt>" so the server can authenticate without
+        // relying on third-party cookies (works in incognito with cookies blocked).
         (async function() {
             if (!window.shopify) return;
 
-            // 1. Get session token (primary auth method)
-            try {
-                const token = await shopify.idToken();
-                if (token) {
-                    document.cookie = `shopify_session_token=${token}; path=/; SameSite=None; Secure`;
+            // Patch fetch to attach a fresh session token on every same-origin call.
+            const originalFetch = window.fetch;
+            window.fetch = async function(input, init) {
+                init = init || {};
+                let url;
+                try { url = new URL(typeof input === "string" ? input : input.url, window.location.origin); }
+                catch (e) { return originalFetch(input, init); }
+                if (url.origin === window.location.origin) {
+                    try {
+                        const token = await shopify.idToken();
+                        if (token) {
+                            const headers = new Headers(init.headers || {});
+                            headers.set("Authorization", "Bearer " + token);
+                            init.headers = headers;
+                        }
+                    } catch (e) { /* fall through unauth'd; server will redirect */ }
                 }
-            } catch(e) {}
+                return originalFetch(input, init);
+            };
 
-            // 2. Use App Bridge loading state
-            try {
-                shopify.loading(false);
-            } catch(e) {}
-
-            // 3. Use App Bridge toast for feedback on actions
-            document.querySelectorAll('form').forEach(function(form) {
-                form.addEventListener('submit', function() {
-                    try { shopify.toast.show('Saving...'); } catch(e) {}
+            // App Bridge UI integration
+            try { shopify.loading(false); } catch(e) {}
+            document.querySelectorAll("form").forEach(function(form) {
+                form.addEventListener("submit", function() {
+                    try { shopify.toast.show("Saving..."); } catch(e) {}
                 });
             });
-
-            // 4. Use App Bridge for navigation context
-            try {
-                const config = shopify.config;
-            } catch(e) {}
         })();
     </script>
 </body>
