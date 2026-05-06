@@ -6,7 +6,7 @@
     <title>StockPilot — {% block title %}Dashboard{% endblock %}</title>
 
     <!-- Shopify App Bridge — meta tag MUST come before script -->
-    <meta name="shopify-api-key" content="128f80ac998d617efdb21cce5f85a669" />
+    <meta name="shopify-api-key" content="{{ SHOPIFY_API_KEY }}" />
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
 
     <!-- Shopify Polaris Web Components -->

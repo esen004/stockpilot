@@ -9,12 +9,22 @@ from .shopify_client import ShopifyClient
 def create_subscription(shop: Shop, plan_key: str) -> str:
     """Create a Shopify app subscription and return the confirmation URL.
     Merchant must visit confirmation URL to approve the charge.
+
+    If the shop already has an active subscription on a different plan,
+    cancel it first so the merchant can upgrade/downgrade cleanly without
+    contacting support (App Store requirement 1.2.3).
     """
     plan = settings.STOCKPILOT_PLANS.get(plan_key)
     if not plan:
         raise ValueError(f"Unknown plan: {plan_key}")
 
     client = ShopifyClient(shop)
+
+    if shop.shopify_charge_id and shop.plan != plan_key and shop.billing_status == "active":
+        try:
+            cancel_subscription(shop)
+        except Exception:
+            pass
 
     # test: false in production — Shopify automatically forces test mode on
     # development stores regardless of this flag, so real merchants get billed
