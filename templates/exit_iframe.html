@@ -12,32 +12,58 @@
 </head>
 <body>
     <p>Redirecting to Shopify…</p>
+
+    <a id="manualRedirect" href="{{ redirect_url|escape }}" target="_top" style="display:none;">Continue</a>
+
     <script>
     (function() {
         var target = "{{ redirect_url|escapejs }}";
         // Resolve relative URLs against THIS frame's origin (our app), not the
-        // top frame's origin (admin.shopify.com) — otherwise window.top.location
-        // would land on admin.shopify.com/<path> which 404s.
+        // top frame's origin (admin.shopify.com).
         if (target && target.charAt(0) === "/") {
             target = window.location.origin + target;
         }
-        function go() {
+
+        // Modern App Bridge intercepts open(url, '_top') and properly breaks out
+        // of the admin iframe — window.top.location.href gets sandboxed by
+        // Shopify admin's Cross-Origin-Opener-Policy and stays inside the iframe.
+        function goAppBridge() {
+            try {
+                if (typeof open === "function") {
+                    var w = open(target, "_top");
+                    return true;
+                }
+            } catch (e) { /* fall through */ }
+            return false;
+        }
+        function goTopLocation() {
             try {
                 if (window.top && window.top !== window.self) {
                     window.top.location.href = target;
-                    return;
+                    return true;
                 }
-            } catch (e) { /* cross-origin top write may throw in rare sandbox cases */ }
-            try {
-                if (window.shopify && window['app-bridge'] && window['app-bridge'].actions) {
-                    var Redirect = window['app-bridge'].actions.Redirect;
-                    Redirect.create(window.shopify).dispatch(Redirect.Action.REMOTE, target);
-                    return;
-                }
-            } catch (e) { /* App Bridge fallback failed */ }
-            window.location.href = target;
+                window.location.href = target;
+                return true;
+            } catch (e) { return false; }
         }
-        go();
+        function goAnchorClick() {
+            // Last resort: synthesize a click on a <a target="_top"> — App Bridge
+            // intercepts these clicks even when programmatic top.location is blocked.
+            try {
+                var a = document.getElementById("manualRedirect");
+                if (a) { a.click(); return true; }
+            } catch (e) {}
+            return false;
+        }
+
+        // Try anchor click first (most reliable inside admin), then App Bridge
+        // open(), then raw top.location. Anchor synthesis is the documented
+        // Shopify pattern for iframe-breakout.
+        if (!goAnchorClick()) {
+            if (!goAppBridge()) {
+                goTopLocation();
+            }
+        }
     })();
     </script>
     <noscript>
