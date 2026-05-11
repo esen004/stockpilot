@@ -97,10 +97,16 @@ def _require_shop(view_func):
 
         shop = _get_shop(request)
         if not shop:
-            shop_domain = request.GET.get("shop", "")
-            if shop_domain:
-                return redirect(f"/auth/install?shop={shop_domain}")
-            return HttpResponse("Please install the app from your Shopify admin.", status=400)
+            shop_domain = request.GET.get("shop", "").strip()
+            # Initiate OAuth via top-frame redirect (X-Frame-Options on Shopify
+            # OAuth pages means a server-side 302 to accounts.shopify.com renders
+            # as Chrome's "refused to connect" inside the embedded iframe).
+            if shop_domain and shop_domain.endswith(".myshopify.com"):
+                return render(request, "exit_iframe.html", {
+                    "redirect_url": f"/auth/install?shop={shop_domain}",
+                })
+            # No shop param — bounce to dashboard which shows the install prompt.
+            return render(request, "core/install_prompt.html")
         request.shop = shop
         return view_func(request, *args, **kwargs)
     return wrapper
@@ -207,21 +213,27 @@ def _check_limit(shop, limit_key, current_count):
 
 # --- Dashboard ---
 
+def _is_valid_shop(s):
+    return bool(s) and s.endswith(".myshopify.com") and "/" not in s and " " not in s
+
+
 def dashboard(request):
     """Dashboard — MUST return 200 with App Bridge tags for Shopify's checker."""
     shop = _get_shop(request)
     if not shop:
-        # Return page WITH App Bridge tags even without auth — checker needs this
-        return render(request, "core/dashboard.html", {
-            "shop": None,
-            "total_variants": 0,
-            "total_suppliers": 0,
-            "open_pos": 0,
-            "low_stock_count": 0,
-            "dead_stock_count": 0,
-            "recent_pos": [],
-            "active_tab": "dashboard",
-        })
+        # No authenticated shop. Two cases:
+        #   1) Loaded with ?shop=<store>.myshopify.com (normal embedded path) —
+        #      need to initiate OAuth, which must happen at the TOP frame (not iframe)
+        #      because Shopify OAuth endpoints send X-Frame-Options: DENY.
+        #   2) Direct visit with no shop param — show install prompt page.
+        # In both cases the response is 200 with App Bridge tags so Shopify's
+        # automated checker is satisfied.
+        shop_domain = request.GET.get("shop", "").strip()
+        if _is_valid_shop(shop_domain):
+            return render(request, "exit_iframe.html", {
+                "redirect_url": f"/auth/install?shop={shop_domain}",
+            })
+        return render(request, "core/install_prompt.html")
     from django.core.cache import cache
     cache_key = f"dashboard:{shop.id}"
     ctx = cache.get(cache_key)
@@ -254,19 +266,23 @@ def sync_from_shopify(request):
     shop = _get_shop(request)
     if not shop:
         shop_domain = request.GET.get("shop", "").strip()
-        if shop_domain:
-            return redirect(f"/auth/install?shop={shop_domain}")
-        return HttpResponse("No shop found. Install the app first.", status=400)
+        if _is_valid_shop(shop_domain):
+            return render(request, "exit_iframe.html", {
+                "redirect_url": f"/auth/install?shop={shop_domain}",
+            })
+        return render(request, "core/install_prompt.html")
 
     try:
         from .shopify_client import ShopifyClient
         ShopifyClient(shop).sync_all()
     except _requests.HTTPError as e:
-        # Stale/revoked token — force re-auth
+        # Stale/revoked token — force re-auth via top-frame redirect.
         if e.response is not None and e.response.status_code in (401, 403):
             shop.is_active = False
             shop.save(update_fields=["is_active"])
-            return redirect(f"/auth/install?shop={shop.shopify_domain}")
+            return render(request, "exit_iframe.html", {
+                "redirect_url": f"/auth/install?shop={shop.shopify_domain}",
+            })
         raise
     return redirect(f"/?shop={shop.shopify_domain}")
 

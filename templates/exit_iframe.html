@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting…</title>
+    <meta name="shopify-api-key" content="{{ SHOPIFY_API_KEY }}" />
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #6d7175; text-align: center; }
+    </style>
+</head>
+<body>
+    <p>Redirecting to Shopify…</p>
+    <script>
+    (function() {
+        var target = "{{ redirect_url|escapejs }}";
+        // Resolve relative URLs against THIS frame's origin (our app), not the
+        // top frame's origin (admin.shopify.com) — otherwise window.top.location
+        // would land on admin.shopify.com/<path> which 404s.
+        if (target && target.charAt(0) === "/") {
+            target = window.location.origin + target;
+        }
+        function go() {
+            try {
+                if (window.top && window.top !== window.self) {
+                    window.top.location.href = target;
+                    return;
+                }
+            } catch (e) { /* cross-origin top write may throw in rare sandbox cases */ }
+            try {
+                if (window.shopify && window['app-bridge'] && window['app-bridge'].actions) {
+                    var Redirect = window['app-bridge'].actions.Redirect;
+                    Redirect.create(window.shopify).dispatch(Redirect.Action.REMOTE, target);
+                    return;
+                }
+            } catch (e) { /* App Bridge fallback failed */ }
+            window.location.href = target;
+        }
+        go();
+    })();
+    </script>
+    <noscript>
+        <p>JavaScript is required. <a href="{{ redirect_url|escape }}" target="_top">Click here to continue</a>.</p>
+    </noscript>
+</body>
+</html>

@@ -7,11 +7,21 @@ from urllib.parse import urlencode
 import requests
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from core.models import Shop
+
+
+def _exit_iframe_redirect(request, target_url):
+    """
+    Render a tiny HTML page that breaks out of the Shopify admin iframe and
+    navigates the top window to `target_url`. Required for OAuth (accounts.shopify.com
+    and {shop}.myshopify.com/admin/oauth/authorize both send X-Frame-Options: DENY,
+    so the redirect must happen at the top frame, not inside the embedded iframe).
+    """
+    return render(request, "exit_iframe.html", {"redirect_url": target_url})
 
 
 def _verify_hmac(query_params: dict, secret: str) -> bool:
@@ -46,7 +56,7 @@ def install(request):
         "state": nonce,
     }
     auth_url = f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
-    return redirect(auth_url)
+    return _exit_iframe_redirect(request, auth_url)
 
 
 def callback(request):
