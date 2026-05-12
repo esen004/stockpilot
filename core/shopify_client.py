@@ -25,9 +25,10 @@ class ShopifyClient:
         if variables:
             payload["variables"] = variables
         resp = requests.post(self.base_url, json=payload, headers=self.headers, timeout=30)
-        if resp.status_code in (401, 403):
-            self.shop.is_active = False
-            self.shop.save(update_fields=["is_active"])
+        # NOTE: do NOT auto-deactivate the shop on 401/403. A single transient
+        # 401 (rate limit, network blip, scope edge case on one field) was killing
+        # the entire install record and locking the dashboard out of the admin
+        # iframe. Real uninstalls are handled by the app-uninstalled webhook.
         resp.raise_for_status()
         data = resp.json()
         if "errors" in data:

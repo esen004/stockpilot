@@ -28,7 +28,7 @@ def _get_shop(request):
         shop_obj = cache.get(cache_key)
         if not shop_obj:
             try:
-                shop_obj = Shop.objects.get(shopify_domain=shop_domain, is_active=True)
+                shop_obj = Shop.objects.get(shopify_domain=shop_domain)
                 cache.set(cache_key, shop_obj, 300)
             except Shop.DoesNotExist:
                 shop_obj = None
@@ -43,7 +43,7 @@ def _get_shop(request):
         shop_obj = cache.get(cache_key)
         if not shop_obj:
             try:
-                shop_obj = Shop.objects.get(id=shop_id, is_active=True)
+                shop_obj = Shop.objects.get(id=shop_id)
                 cache.set(cache_key, shop_obj, 300)
             except Shop.DoesNotExist:
                 shop_obj = None
@@ -57,7 +57,7 @@ def _get_shop(request):
         shop_obj = cache.get(cache_key)
         if not shop_obj:
             try:
-                shop_obj = Shop.objects.get(shopify_domain=shop_domain, is_active=True)
+                shop_obj = Shop.objects.get(shopify_domain=shop_domain)
                 cache.set(cache_key, shop_obj, 300)
             except Shop.DoesNotExist:
                 shop_obj = None
@@ -277,9 +277,10 @@ def sync_from_shopify(request):
         ShopifyClient(shop).sync_all()
     except _requests.HTTPError as e:
         # Stale/revoked token — force re-auth via top-frame redirect.
+        # NOTE: do not deactivate the shop record here. The real uninstall
+        # webhook is the source of truth for shop lifecycle — a single 401/403
+        # during sync may be a transient API issue, not a real revocation.
         if e.response is not None and e.response.status_code in (401, 403):
-            shop.is_active = False
-            shop.save(update_fields=["is_active"])
             return render(request, "exit_iframe.html", {
                 "redirect_url": f"/auth/install?shop={shop.shopify_domain}",
             })
