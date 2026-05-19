@@ -59,6 +59,11 @@ urlpatterns = [
     path("billing/select", views.billing_select, name="billing_select"),
     path("billing/callback", views.billing_callback, name="billing_callback"),
 
+    # Heartbeat — emits Authorization: Bearer fetches so Shopify's embedded-app
+    # monitor sees session-token auth in use. Required to flip the green checks
+    # on the App Store preliminary checklist for server-rendered apps.
+    path("api/heartbeat", views.heartbeat, name="heartbeat"),
+
     # Cron
     path("cron/weekly-report", views.weekly_report, name="weekly_report"),
 ]

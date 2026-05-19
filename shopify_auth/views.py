@@ -1,8 +1,9 @@
 import hashlib
 import hmac
 import json
+import logging
 import secrets
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import requests
 from django.conf import settings
@@ -12,6 +13,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from core.models import Shop
+
+logger = logging.getLogger(__name__)
 
 
 def _exit_iframe_redirect(request, target_url):
@@ -25,7 +28,32 @@ def _exit_iframe_redirect(request, target_url):
 
 
 def _verify_hmac(query_params: dict, secret: str) -> bool:
-    """Verify Shopify HMAC signature on OAuth callback."""
+    """Verify Shopify HMAC signature on OAuth callback.
+
+    Tries both raw-sorted (older docs) and URL-encoded-values (current Shopify
+    implementation). Strips `hmac` and `signature` per Shopify spec.
+    """
+    params = {k: v for k, v in query_params.items() if k not in ("hmac", "signature")}
+    received_hmac = query_params.get("hmac", "")
+    if not received_hmac:
+        return False
+    secret_bytes = secret.encode("utf-8")
+    raw_msg = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
+    raw_computed = hmac.new(secret_bytes, raw_msg.encode("utf-8"), hashlib.sha256).hexdigest()
+    if hmac.compare_digest(raw_computed, received_hmac):
+        return True
+    enc_msg = "&".join(f"{k}={quote(str(v), safe='')}" for k, v in sorted(params.items()))
+    enc_computed = hmac.new(secret_bytes, enc_msg.encode("utf-8"), hashlib.sha256).hexdigest()
+    if hmac.compare_digest(enc_computed, received_hmac):
+        return True
+    logger.error("HMAC verify failed. recv=%s.., raw=%s.., enc=%s.., secret_len=%d, keys=%s",
+                 received_hmac[:8], raw_computed[:8], enc_computed[:8],
+                 len(secret) if secret else 0, sorted(params.keys()))
+    return False
+
+
+def _OLD_verify_hmac_unused(query_params: dict, secret: str) -> bool:
+    """Legacy verifier kept for reference — DO NOT CALL."""
     params = dict(query_params)
     received_hmac = params.pop("hmac", None)
     if not received_hmac:
@@ -130,6 +158,66 @@ def callback(request):
 def manual_setup(request):
     """Removed — accepted access tokens via GET, bypassed OAuth."""
     return HttpResponse(status=404)
+
+
+def token_exchange(shop_domain: str, session_token: str) -> str:
+    """Modern Shopify auth: trade a session token (JWT id_token) directly for an
+    offline access token. Replaces the legacy OAuth redirect flow which is
+    blocked by Shopify admin's iframe sandbox.
+
+    Returns the access_token string, or empty string on failure.
+    """
+    if not shop_domain or not session_token:
+        return ""
+    try:
+        resp = requests.post(
+            f"https://{shop_domain}/admin/oauth/access_token",
+            json={
+                "client_id": settings.SHOPIFY_API_KEY,
+                "client_secret": settings.SHOPIFY_API_SECRET,
+                "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+                "subject_token": session_token,
+                "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
+                "requested_token_type": "urn:shopify:params:oauth:token-type:offline-access-token",
+            },
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            logger.error("Token exchange failed for %s: HTTP %d body=%s",
+                         shop_domain, resp.status_code, resp.text[:300])
+            return ""
+        return resp.json().get("access_token", "")
+    except Exception as e:
+        logger.error("Token exchange exception for %s: %s", shop_domain, e)
+        return ""
+
+
+def ensure_shop_via_token_exchange(request):
+    """If the current request has a valid Shopify session token but no Shop
+    record yet, perform Token Exchange to create one. Returns the Shop or None.
+    """
+    shop_domain = getattr(request, "shopify_shop_domain", None)
+    session_token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip() \
+        or request.GET.get("id_token", "").strip()
+    if not shop_domain or not session_token:
+        return None
+    try:
+        return Shop.objects.get(shopify_domain=shop_domain)
+    except Shop.DoesNotExist:
+        pass
+    access_token = token_exchange(shop_domain, session_token)
+    if not access_token:
+        return None
+    shop_obj, _ = Shop.objects.update_or_create(
+        shopify_domain=shop_domain,
+        defaults={"access_token": access_token, "is_active": True, "uninstalled_at": None},
+    )
+    try: _fetch_store_info(shop_obj)
+    except Exception: pass
+    try: _register_webhooks(shop_obj)
+    except Exception: pass
+    request.session["shop_id"] = shop_obj.id
+    return shop_obj
 
 
 def _fetch_store_info(shop_obj):

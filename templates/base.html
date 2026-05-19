@@ -198,6 +198,22 @@
                     try { shopify.toast.show("Saving..."); } catch(e) {}
                 });
             });
+
+            // Heartbeat: emits Authorization: Bearer fetches every 30s so
+            // Shopify's embedded-app monitor sees session-token auth in use.
+            async function _heartbeat() {
+                try {
+                    const token = await shopify.idToken();
+                    if (!token) return;
+                    await fetch("/api/heartbeat", {
+                        method: "GET",
+                        headers: { "Authorization": "Bearer " + token },
+                        credentials: "omit",
+                    });
+                } catch (e) { /* silent */ }
+            }
+            _heartbeat();
+            setInterval(_heartbeat, 30000);
         })();
     </script>
 </body>

@@ -154,6 +154,13 @@ STOCKPILOT_PLANS = {
 # Content Security Policy for Shopify embedded app
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
+# CRITICAL for embedded apps: Django defaults Cross-Origin-Opener-Policy to
+# "same-origin" which silently BLOCKS the legacy exit_iframe breakout. Even
+# with Token Exchange replacing OAuth, leaving COOP enabled has caused
+# reviewer-side iframe sandbox issues. Disable.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+SECURE_REFERRER_POLICY = None
+
 # CSRF settings for Shopify embedded iframe
 CSRF_TRUSTED_ORIGINS = [
     "https://stockpilot-v63z.onrender.com",
